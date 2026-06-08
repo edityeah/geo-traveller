@@ -1,0 +1,335 @@
+:root {
+  --bg: #fafaf7;
+  --fg: #14110f;
+  --muted: #6b6760;
+  --accent: #1a4d3c;
+  --rule: #e5e1d8;
+  --max-w: 68rem;
+  --measure: 38rem;
+
+  --font-serif: 'Source Serif 4', 'Source Serif Pro', Georgia, 'Times New Roman', serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-serif);
+  font-size: 18px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s ease;
+}
+a:hover {
+  text-decoration-color: var(--accent);
+}
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+figure {
+  margin: 2rem 0;
+}
+figcaption {
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.site-header {
+  border-bottom: 1px solid var(--rule);
+  padding: 1.5rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  width: 100%;
+}
+.site-header .brand {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+.site-header nav {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  display: flex;
+  gap: 1.5rem;
+}
+.site-header nav a {
+  text-decoration: none;
+  color: var(--muted);
+}
+.site-header nav a:hover {
+  color: var(--fg);
+}
+
+.site-footer {
+  border-top: 1px solid var(--rule);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* Homepage */
+.hero {
+  padding: 3rem 0 2rem;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 3rem;
+}
+.hero h1 {
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin: 0 0 1rem;
+}
+.hero p {
+  color: var(--muted);
+  font-size: 1.1rem;
+  max-width: var(--measure);
+  margin: 0;
+}
+
+.post-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+  gap: 3rem 2rem;
+}
+.card a {
+  text-decoration: none;
+}
+.card .cover {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--rule);
+  margin-bottom: 1rem;
+}
+.card .cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.card a:hover .cover img {
+  transform: scale(1.03);
+}
+.card .cover.placeholder {
+  background: linear-gradient(135deg, #d8d3c7, #efece4);
+}
+.card h2 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.4rem;
+}
+.card .meta {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+.card .excerpt {
+  color: var(--muted);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* Post page */
+.post-header {
+  text-align: center;
+  padding: 2rem 0 3rem;
+  max-width: var(--measure);
+  margin: 0 auto;
+}
+.post-header .kicker {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+}
+.post-header h1 {
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0 0 1rem;
+}
+.post-header .location {
+  font-family: var(--font-sans);
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.post-cover {
+  max-width: var(--max-w);
+  margin: 0 auto 3rem;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+.post-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.post-body {
+  max-width: var(--measure);
+  margin: 0 auto;
+}
+.post-body > * + * {
+  margin-top: 1.5em;
+}
+.post-body h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 3rem;
+}
+.post-body h3 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin-top: 2.5rem;
+}
+.post-body blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1.5rem;
+  margin-left: 0;
+  font-style: italic;
+  color: #2a2520;
+}
+.post-body code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--rule);
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+}
+.post-body pre {
+  background: #f4f1ea;
+  padding: 1rem;
+  overflow-x: auto;
+  border-radius: 4px;
+}
+.post-body pre code {
+  background: none;
+  padding: 0;
+}
+.post-body img,
+.post-body figure {
+  margin: 2.5rem -2rem;
+  max-width: calc(100% + 4rem);
+  width: calc(100% + 4rem);
+}
+@media (max-width: 700px) {
+  .post-body img,
+  .post-body figure {
+    margin: 2rem 0;
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+.post-footer {
+  max-width: var(--measure);
+  margin: 4rem auto 0;
+  padding-top: 2rem;
+  border-top: 1px solid var(--rule);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+.post-footer .tag {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--muted);
+}
+.post-footer .tag:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Archive / tag pages */
+.archive-list {
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0 0;
+}
+.archive-list li {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: 1.5rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: baseline;
+}
+.archive-list .date {
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.archive-list a {
+  text-decoration: none;
+  font-size: 1.05rem;
+}
+.archive-list a:hover {
+  color: var(--accent);
+}
+
+.page-title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.5rem;
+}
+.page-subtitle {
+  font-family: var(--font-sans);
+  color: var(--muted);
+  margin: 0;
+}

@@ -1,0 +1,30 @@
+---
+import type { Post } from '../lib/posts';
+import { postPath } from '../lib/posts';
+
+interface Props {
+  post: Post;
+}
+const { post } = Astro.props;
+const href = postPath(post);
+const date = post.data.publishDate.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+---
+
+<article class="card">
+  <a href={href}>
+    {post.data.cover ? (
+      <div class="cover"><img src={post.data.cover} alt={post.data.title} loading="lazy" /></div>
+    ) : (
+      <div class="cover placeholder" aria-hidden="true"></div>
+    )}
+    <div class="meta">
+      {date}{post.data.locationName ? ` · ${post.data.locationName}` : ''}
+    </div>
+    <h2>{post.data.title}</h2>
+    {post.data.excerpt && <p class="excerpt">{post.data.excerpt}</p>}
+  </a>
+</article>

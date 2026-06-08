@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+import { getAllPosts, postPath } from '../lib/posts';
+
+const posts = await getAllPosts();
+---
+
+<Base title="Archive">
+  <h1 class="page-title">Archive</h1>
+  <p class="page-subtitle">{posts.length} {posts.length === 1 ? 'post' : 'posts'}, newest first.</p>
+
+  <ul class="archive-list">
+    {posts.map((post) => (
+      <li>
+        <span class="date">
+          {post.data.publishDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          })}
+        </span>
+        <a href={postPath(post)}>{post.data.title}</a>
+      </li>
+    ))}
+  </ul>
+</Base>

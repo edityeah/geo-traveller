@@ -1,0 +1,56 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getAllPosts, postSlug, tagSlug } from '../../lib/posts';
+import { render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getAllPosts();
+  return posts.map((post) => ({
+    params: { slug: postSlug(post) },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const date = post.data.publishDate.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+---
+
+<Base
+  title={post.data.title}
+  description={post.data.excerpt}
+  ogImage={post.data.cover}
+  publishedTime={post.data.originalDate ?? post.data.publishDate}
+>
+  <article>
+    <header class="post-header">
+      <div class="kicker">{date}{post.data.locationName ? ` · ${post.data.locationName}` : ''}</div>
+      <h1>{post.data.title}</h1>
+      {post.data.excerpt && <p class="location">{post.data.excerpt}</p>}
+    </header>
+
+    {post.data.cover && (
+      <div class="post-cover">
+        <img src={post.data.cover} alt={post.data.title} />
+      </div>
+    )}
+
+    <div class="post-body">
+      <Content />
+    </div>
+
+    {post.data.tags && post.data.tags.length > 0 && (
+      <footer class="post-footer">
+        <span>Filed under:</span>
+        {post.data.tags.map((t) => (
+          <a class="tag" href={`/tags/${tagSlug(t)}/`}>{t}</a>
+        ))}
+      </footer>
+    )}
+  </article>
+</Base>

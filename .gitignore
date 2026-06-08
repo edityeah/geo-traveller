@@ -1,0 +1,12 @@
+node_modules
+dist
+.astro
+.env
+.env.local
+
+# Notion-sourced posts (rebuilt every deploy)
+src/content/posts/notion/
+public/img/generated/
+
+# OS
+.DS_Store

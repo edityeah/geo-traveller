@@ -1,0 +1,18 @@
+---
+import Base from '../layouts/Base.astro';
+import PostCard from '../components/PostCard.astro';
+import { getAllPosts } from '../lib/posts';
+
+const posts = await getAllPosts();
+---
+
+<Base>
+  <section class="hero">
+    <h1>Notes from a long way around.</h1>
+    <p>Stories from places I've wandered through — the obvious ones, the obscure ones, and everything between.</p>
+  </section>
+
+  <section class="post-grid">
+    {posts.map((post) => <PostCard post={post} />)}
+  </section>
+</Base>
