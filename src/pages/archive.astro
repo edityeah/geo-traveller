@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getAllPosts, postPath } from '../lib/posts';
+import { getAllPosts, postPath, readMinutes, formatDateShort } from '../lib/posts';
 
 const posts = await getAllPosts();
 ---
@@ -12,14 +12,9 @@ const posts = await getAllPosts();
   <ul class="archive-list">
     {posts.map((post) => (
       <li>
-        <span class="date">
-          {post.data.publishDate.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-          })}
-        </span>
+        <span class="date">{formatDateShort(post.data.publishDate)}</span>
         <a href={postPath(post)}>{post.data.title}</a>
+        <span class="read-time">{readMinutes(post)} min</span>
       </li>
     ))}
   </ul>

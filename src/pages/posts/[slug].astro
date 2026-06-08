@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { getAllPosts, postSlug, tagSlug } from '../../lib/posts';
+import { getAllPosts, postSlug, tagSlug, readMinutes, formatDate } from '../../lib/posts';
 import { render } from 'astro:content';
 
 export async function getStaticPaths() {
@@ -13,12 +13,8 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const { Content } = await render(post);
-
-const date = post.data.publishDate.toLocaleDateString('en-US', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
+const date = formatDate(post.data.publishDate);
+const mins = readMinutes(post);
 ---
 
 <Base
@@ -29,9 +25,13 @@ const date = post.data.publishDate.toLocaleDateString('en-US', {
 >
   <article>
     <header class="post-header">
-      <div class="kicker">{date}{post.data.locationName ? ` · ${post.data.locationName}` : ''}</div>
+      <div class="kicker">
+        {date}
+        {post.data.locationName && ` · ${post.data.locationName}`}
+        {` · ${mins} min read`}
+      </div>
       <h1>{post.data.title}</h1>
-      {post.data.excerpt && <p class="location">{post.data.excerpt}</p>}
+      {post.data.excerpt && <p class="lede">{post.data.excerpt}</p>}
     </header>
 
     {post.data.cover && (

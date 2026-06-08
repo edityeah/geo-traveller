@@ -1,6 +1,28 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
+import readingTime from 'reading-time';
 
 export type Post = CollectionEntry<'posts'>;
+
+export function readMinutes(p: Post): number {
+  const body = p.body ?? '';
+  return Math.max(1, Math.round(readingTime(body).minutes));
+}
+
+export function formatDate(d: Date): string {
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+export function formatDateShort(d: Date): string {
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
 
 export async function getAllPosts(): Promise<Post[]> {
   const all = await getCollection('posts');

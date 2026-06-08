@@ -1,18 +1,43 @@
 ---
 import Base from '../layouts/Base.astro';
 import PostCard from '../components/PostCard.astro';
-import { getAllPosts } from '../lib/posts';
+import { getAllPosts, postPath, readMinutes, formatDate } from '../lib/posts';
 
 const posts = await getAllPosts();
+const [featured, ...rest] = posts;
+const featuredDate = featured ? formatDate(featured.data.publishDate) : '';
+const featuredMins = featured ? readMinutes(featured) : 0;
 ---
 
 <Base>
   <section class="hero">
-    <h1>Notes from a long way around.</h1>
+    <h1>Notes from the long way around.</h1>
     <p>Stories from places I've wandered through — the obvious ones, the obscure ones, and everything between.</p>
   </section>
 
-  <section class="post-grid">
-    {posts.map((post) => <PostCard post={post} />)}
-  </section>
+  {featured && (
+    <a class="featured" href={postPath(featured)}>
+      {featured.data.cover ? (
+        <div class="cover"><img src={featured.data.cover} alt={featured.data.title} /></div>
+      ) : (
+        <div class="cover placeholder" aria-hidden="true"></div>
+      )}
+      <div class="featured-text">
+        <div class="kicker">
+          Latest · {featuredDate}
+          {featured.data.locationName && ` · ${featured.data.locationName}`}
+          {` · ${featuredMins} min read`}
+        </div>
+        <h2>{featured.data.title}</h2>
+        {featured.data.excerpt && <p class="excerpt">{featured.data.excerpt}</p>}
+        <span class="read-more">Read the story →</span>
+      </div>
+    </a>
+  )}
+
+  {rest.length > 0 && (
+    <section class="post-grid">
+      {rest.map((post) => <PostCard post={post} />)}
+    </section>
+  )}
 </Base>

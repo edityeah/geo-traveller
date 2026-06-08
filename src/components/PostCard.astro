@@ -1,17 +1,14 @@
 ---
 import type { Post } from '../lib/posts';
-import { postPath } from '../lib/posts';
+import { postPath, readMinutes, formatDate } from '../lib/posts';
 
 interface Props {
   post: Post;
 }
 const { post } = Astro.props;
 const href = postPath(post);
-const date = post.data.publishDate.toLocaleDateString('en-US', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
+const date = formatDate(post.data.publishDate);
+const mins = readMinutes(post);
 ---
 
 <article class="card">
@@ -22,7 +19,15 @@ const date = post.data.publishDate.toLocaleDateString('en-US', {
       <div class="cover placeholder" aria-hidden="true"></div>
     )}
     <div class="meta">
-      {date}{post.data.locationName ? ` · ${post.data.locationName}` : ''}
+      <span>{date}</span>
+      {post.data.locationName && (
+        <>
+          <span class="dot"></span>
+          <span>{post.data.locationName}</span>
+        </>
+      )}
+      <span class="dot"></span>
+      <span>{mins} min</span>
     </div>
     <h2>{post.data.title}</h2>
     {post.data.excerpt && <p class="excerpt">{post.data.excerpt}</p>}
