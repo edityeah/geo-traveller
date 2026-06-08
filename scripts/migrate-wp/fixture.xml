@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0"
+  xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:wp="http://wordpress.org/export/1.2/">
+<channel>
+  <title>Geo-Traveller</title>
+  <link>https://geo-traveller.com</link>
+  <description>Travel notes</description>
+  <pubDate>Mon, 20 Apr 2020 09:00:00 +0000</pubDate>
+  <language>en-US</language>
+  <wp:wxr_version>1.2</wp:wxr_version>
+
+  <item>
+    <title>A morning in Hampi</title>
+    <link>https://geo-traveller.com/2020/04/20/hampi/</link>
+    <pubDate>Mon, 20 Apr 2020 09:00:00 +0000</pubDate>
+    <dc:creator><![CDATA[aditya]]></dc:creator>
+    <guid isPermaLink="false">https://geo-traveller.com/?p=42</guid>
+    <description></description>
+    <content:encoded><![CDATA[
+      <p>The bus left Hospet at <strong>six in the morning</strong>, while the sky was still that washed-out grey that happens only between Indian summers and the rains.</p>
+      <h2>Sunrise on the boulders</h2>
+      <p>We climbed Matanga Hill before sunrise. The light came in <em>slowly</em>, as if it had been doing this for nine hundred years and was in no hurry.</p>
+      <figure>
+        <img src="https://geo-traveller.com/wp-content/uploads/2020/04/hampi-sunrise.jpg" alt="Sunrise over Hampi" />
+        <figcaption>The view from the top of Matanga Hill.</figcaption>
+      </figure>
+      <blockquote>You could see <em>everything</em> from up there — Vijayanagara, the Tungabhadra, the temple roofs, the road back to the city.</blockquote>
+      <h3>What we ate</h3>
+      <ul>
+        <li>Idli at the railway canteen</li>
+        <li>Dosa from a roadside cart in Kamalapur</li>
+        <li>Pineapple, sliced, from a vendor at Virupaksha</li>
+      </ul>
+      <p>By noon the heat had settled in. We walked back to the guesthouse the long way, past the elephant stables and the lotus mahal. Visit the <a href="https://hampi.in">official site</a> if you want to plan your own trip.</p>
+      <pre><code>Some literal text, preserved.</code></pre>
+      [gallery ids="11,12,13"]
+    ]]></content:encoded>
+    <excerpt:encoded><![CDATA[An early morning hike up Matanga Hill in Hampi, and the long way home through the ruins.]]></excerpt:encoded>
+    <wp:post_id>42</wp:post_id>
+    <wp:post_date><![CDATA[2020-04-20 09:00:00]]></wp:post_date>
+    <wp:post_date_gmt><![CDATA[2020-04-20 09:00:00]]></wp:post_date_gmt>
+    <wp:comment_status><![CDATA[open]]></wp:comment_status>
+    <wp:ping_status><![CDATA[open]]></wp:ping_status>
+    <wp:post_name><![CDATA[hampi]]></wp:post_name>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_parent>0</wp:post_parent>
+    <wp:menu_order>0</wp:menu_order>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <wp:post_password><![CDATA[]]></wp:post_password>
+    <wp:is_sticky>0</wp:is_sticky>
+    <category domain="category" nicename="india"><![CDATA[India]]></category>
+    <category domain="category" nicename="karnataka"><![CDATA[Karnataka]]></category>
+    <category domain="post_tag" nicename="ruins"><![CDATA[ruins]]></category>
+    <category domain="post_tag" nicename="sunrise"><![CDATA[sunrise]]></category>
+    <wp:postmeta>
+      <wp:meta_key><![CDATA[_thumbnail_id]]></wp:meta_key>
+      <wp:meta_value><![CDATA[101]]></wp:meta_value>
+    </wp:postmeta>
+  </item>
+
+  <item>
+    <title>(Featured image attachment)</title>
+    <link>https://geo-traveller.com/wp-content/uploads/2020/04/hampi-sunrise.jpg</link>
+    <pubDate>Mon, 20 Apr 2020 08:00:00 +0000</pubDate>
+    <dc:creator><![CDATA[aditya]]></dc:creator>
+    <guid isPermaLink="false">https://geo-traveller.com/?attachment_id=101</guid>
+    <description></description>
+    <content:encoded><![CDATA[]]></content:encoded>
+    <wp:post_id>101</wp:post_id>
+    <wp:post_date><![CDATA[2020-04-20 08:00:00]]></wp:post_date>
+    <wp:post_date_gmt><![CDATA[2020-04-20 08:00:00]]></wp:post_date_gmt>
+    <wp:post_name><![CDATA[hampi-sunrise]]></wp:post_name>
+    <wp:status><![CDATA[inherit]]></wp:status>
+    <wp:post_type><![CDATA[attachment]]></wp:post_type>
+    <wp:attachment_url>https://geo-traveller.com/wp-content/uploads/2020/04/hampi-sunrise.jpg</wp:attachment_url>
+  </item>
+
+  <item>
+    <title>A draft post</title>
+    <link>https://geo-traveller.com/?p=99</link>
+    <pubDate>Tue, 21 Apr 2020 09:00:00 +0000</pubDate>
+    <dc:creator><![CDATA[aditya]]></dc:creator>
+    <guid isPermaLink="false">https://geo-traveller.com/?p=99</guid>
+    <description></description>
+    <content:encoded><![CDATA[<p>still working on this one</p>]]></content:encoded>
+    <wp:post_id>99</wp:post_id>
+    <wp:post_date><![CDATA[2020-04-21 09:00:00]]></wp:post_date>
+    <wp:post_date_gmt><![CDATA[2020-04-21 09:00:00]]></wp:post_date_gmt>
+    <wp:post_name><![CDATA[draft-post]]></wp:post_name>
+    <wp:status><![CDATA[draft]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+  </item>
+
+</channel>
+</rss>

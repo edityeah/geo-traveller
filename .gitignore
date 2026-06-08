@@ -10,3 +10,7 @@ public/img/generated/
 
 # OS
 .DS_Store
+
+# Migration artifacts
+migration-report.md
+scripts/migrate-wp/output/
