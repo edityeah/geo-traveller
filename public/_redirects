@@ -1,0 +1,6 @@
+# Cloudflare Pages reads this file natively.
+# Add lines for any old WordPress URL whose new slug differs:
+#   /old/path  /new/path  301
+#
+# This file is committed; the WordPress importer can append to it when it
+# detects slug differences. For now, no redirects are needed.

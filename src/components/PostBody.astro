@@ -1,0 +1,8 @@
+---
+// Wrapper around the rendered post body that emits Pagefind data attributes
+// so the indexer scopes itself to the article body (not the chrome).
+---
+
+<div class="post-body" data-pagefind-body>
+  <slot />
+</div>

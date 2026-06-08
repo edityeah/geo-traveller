@@ -1,0 +1,50 @@
+---
+const repo = import.meta.env.PUBLIC_GISCUS_REPO;
+const repoId = import.meta.env.PUBLIC_GISCUS_REPO_ID;
+const category = import.meta.env.PUBLIC_GISCUS_CATEGORY;
+const categoryId = import.meta.env.PUBLIC_GISCUS_CATEGORY_ID;
+
+const enabled = repo && repoId && category && categoryId;
+---
+
+{enabled && (
+  <section class="comments">
+    <h2>Comments</h2>
+    <script
+      is:inline
+      src="https://giscus.app/client.js"
+      data-repo={repo}
+      data-repo-id={repoId}
+      data-category={category}
+      data-category-id={categoryId}
+      data-mapping="pathname"
+      data-strict="0"
+      data-reactions-enabled="1"
+      data-emit-metadata="0"
+      data-input-position="top"
+      data-theme="preferred_color_scheme"
+      data-lang="en"
+      data-loading="lazy"
+      crossorigin="anonymous"
+      async
+    ></script>
+  </section>
+)}
+
+<style>
+  .comments {
+    max-width: var(--measure);
+    margin: 4rem auto 0;
+    padding-top: 2rem;
+    border-top: 1px solid var(--rule);
+  }
+  .comments h2 {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 500;
+    margin: 0 0 1.5rem;
+  }
+</style>

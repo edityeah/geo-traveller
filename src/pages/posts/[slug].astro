@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import Comments from '../../components/Comments.astro';
 import { getAllPosts, postSlug, tagSlug, readMinutes, formatDate } from '../../lib/posts';
 import { render } from 'astro:content';
 
@@ -40,7 +41,7 @@ const mins = readMinutes(post);
       </div>
     )}
 
-    <div class="post-body">
+    <div class="post-body" data-pagefind-body>
       <Content />
     </div>
 
@@ -52,5 +53,7 @@ const mins = readMinutes(post);
         ))}
       </footer>
     )}
+
+    <Comments />
   </article>
 </Base>

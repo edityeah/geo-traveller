@@ -1,0 +1,69 @@
+---
+import Base from '../layouts/Base.astro';
+import { getAllPosts, postPath } from '../lib/posts';
+
+const posts = await getAllPosts();
+const withCover = posts.filter((p) => p.data.cover);
+---
+
+<Base title="Gallery" description="Photographs from every post on Geo-Traveller.">
+  <h1 class="page-title">Gallery</h1>
+  <p class="page-subtitle">
+    {withCover.length} {withCover.length === 1 ? 'photo' : 'photos'}, newest first. Click any one to read the story.
+  </p>
+
+  <div class="gallery-grid">
+    {withCover.map((post) => (
+      <a class="gallery-item" href={postPath(post)} title={post.data.title}>
+        <img src={post.data.cover} alt={post.data.title} loading="lazy" />
+        <div class="overlay">
+          <span>{post.data.title}</span>
+        </div>
+      </a>
+    ))}
+  </div>
+</Base>
+
+<style>
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    gap: 0.5rem;
+    margin-top: 2.5rem;
+  }
+  .gallery-item {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background: var(--rule);
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+  .gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .gallery-item:hover img {
+    transform: scale(1.06);
+  }
+  .gallery-item .overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0) 50%);
+    display: flex;
+    align-items: flex-end;
+    padding: 0.75rem;
+    color: #fff;
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .gallery-item:hover .overlay {
+    opacity: 1;
+  }
+</style>

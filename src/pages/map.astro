@@ -1,0 +1,68 @@
+---
+import Base from '../layouts/Base.astro';
+import { getAllPosts, postPath } from '../lib/posts';
+
+const posts = await getAllPosts();
+const pins = posts
+  .filter((p) => typeof p.data.lat === 'number' && typeof p.data.lng === 'number')
+  .map((p) => ({
+    slug: postPath(p),
+    title: p.data.title,
+    location: p.data.locationName ?? '',
+    cover: p.data.cover ?? null,
+    lat: p.data.lat as number,
+    lng: p.data.lng as number,
+  }));
+const pinsJson = JSON.stringify(pins);
+---
+
+<Base title="Map" description="Every post on Geo-Traveller, on a map.">
+  <h1 class="page-title">Map</h1>
+  <p class="page-subtitle">
+    {pins.length} {pins.length === 1 ? 'post' : 'posts'} with locations attached. Click a pin to open the story.
+  </p>
+
+  <div id="map" style="height: 70vh; min-height: 480px; margin-top: 2rem; border: 1px solid var(--rule);"></div>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    is:inline
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script is:inline define:vars={{ pinsJson }}>
+    window.addEventListener('DOMContentLoaded', () => {
+      const pins = JSON.parse(pinsJson);
+      const map = L.map('map');
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 18,
+      }).addTo(map);
+
+      if (pins.length === 0) {
+        map.setView([20, 0], 2);
+        return;
+      }
+
+      const group = L.featureGroup();
+      for (const p of pins) {
+        const marker = L.marker([p.lat, p.lng]);
+        marker.bindPopup(
+          `<a href="${p.slug}" style="text-decoration: none; color: inherit;">
+             <strong>${p.title}</strong><br/>
+             <span style="color: #6b6760; font-size: 0.85em;">${p.location}</span>
+           </a>`
+        );
+        marker.addTo(group);
+      }
+      group.addTo(map);
+      map.fitBounds(group.getBounds().pad(0.2));
+    });
+  </script>
+</Base>

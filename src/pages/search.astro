@@ -1,0 +1,35 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Search">
+  <h1 class="page-title">Search</h1>
+  <p class="page-subtitle">Across every post on the site.</p>
+
+  <div id="search" style="margin-top: 2rem;"></div>
+
+  <link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
+  <script src="/pagefind/pagefind-ui.js" is:inline></script>
+  <script is:inline>
+    window.addEventListener('DOMContentLoaded', () => {
+      new PagefindUI({
+        element: '#search',
+        showSubResults: true,
+        showImages: false,
+        resetStyles: false,
+      });
+    });
+  </script>
+  <style>
+    :root {
+      --pagefind-ui-primary: var(--accent);
+      --pagefind-ui-text: var(--fg);
+      --pagefind-ui-background: var(--bg);
+      --pagefind-ui-border: var(--rule);
+      --pagefind-ui-tag: var(--rule);
+      --pagefind-ui-border-width: 1px;
+      --pagefind-ui-border-radius: 4px;
+      --pagefind-ui-font: var(--font-sans);
+    }
+  </style>
+</Base>

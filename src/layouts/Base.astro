@@ -14,6 +14,9 @@ const pageTitle = title ? `${title} — ${siteTitle}` : siteTitle;
 const siteDescription =
   description ?? 'A travel journal: places, people, and the long way around.';
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();
+
+const cfaToken = import.meta.env.PUBLIC_CFA_TOKEN;
+const buttondownUser = import.meta.env.PUBLIC_BUTTONDOWN_USER;
 ---
 
 <!DOCTYPE html>
@@ -38,15 +41,39 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
       <a href="/" class="brand">Geo-Traveller</a>
       <nav>
         <a href="/archive/">Archive</a>
+        <a href="/map/">Map</a>
+        <a href="/gallery/">Gallery</a>
+        <a href="/search/">Search</a>
         <a href="/about/">About</a>
-        <a href="/rss.xml">RSS</a>
       </nav>
     </header>
     <main>
       <slot />
     </main>
     <footer class="site-footer">
-      &copy; {new Date().getFullYear()} Geo-Traveller. Built with Astro + Notion.
+      {buttondownUser && (
+        <form
+          action={`https://buttondown.email/api/emails/embed-subscribe/${buttondownUser}`}
+          method="post"
+          target="_blank"
+          class="newsletter"
+        >
+          <label for="bd-email">Get new posts by email</label>
+          <input id="bd-email" type="email" name="email" placeholder="you@example.com" required />
+          <button type="submit">Subscribe</button>
+        </form>
+      )}
+      <p>
+        &copy; {new Date().getFullYear()} Geo-Traveller · <a href="/rss.xml">RSS</a> · Built with Astro + Notion
+      </p>
     </footer>
+    {cfaToken && (
+      <script
+        is:inline
+        defer
+        src="https://static.cloudflareinsights.com/beacon.min.js"
+        data-cf-beacon={`{"token": "${cfaToken}"}`}
+      ></script>
+    )}
   </body>
 </html>

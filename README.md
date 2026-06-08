@@ -124,15 +124,51 @@ seed posts.
 
 A build takes 1–2 minutes; when it finishes, the post is live.
 
+## Optional integrations
+
+All optional. Set the matching env vars in your `.env` (and in the Cloudflare
+Pages dashboard) to enable each. The site builds and runs fine without any of
+them.
+
+### Cloudflare Web Analytics
+
+1. Cloudflare dashboard → Web Analytics → Add a site → copy the token.
+2. Set `PUBLIC_CFA_TOKEN` in `.env`. The beacon script appears on every page.
+
+### Giscus comments (free, GitHub Discussions-backed)
+
+1. Pick or create a public GitHub repo that will host the discussions.
+2. Enable Discussions in the repo settings.
+3. Go to https://giscus.app, fill in your repo + category, copy the four
+   data attributes (`data-repo`, `data-repo-id`, `data-category`,
+   `data-category-id`).
+4. Set `PUBLIC_GISCUS_REPO`, `PUBLIC_GISCUS_REPO_ID`,
+   `PUBLIC_GISCUS_CATEGORY`, `PUBLIC_GISCUS_CATEGORY_ID` in `.env`.
+5. Comments render at the bottom of every post page.
+
+### Buttondown newsletter
+
+1. Create a Buttondown account at https://buttondown.com.
+2. Set `PUBLIC_BUTTONDOWN_USER` in `.env` to your Buttondown username.
+3. Subscribe form appears in the site footer.
+
+## WordPress migration
+
+See [scripts/migrate-wp/README.md](scripts/migrate-wp/README.md) for the
+one-time import script.
+
 ## Phases (per the design spec)
 
 - ✅ **Phase 1 — Skeleton.** Astro project, build pipeline, seed posts,
   templates. Builds cleanly.
-- ⏭️ **Phase 2 — Design.** Iterate on typography, layout, photo treatment.
-- ⏭️ **Phase 3 — Migration.** Build the WordPress importer, seed Notion from
-  the WP export.
-- ⏭️ **Phase 4 — Extras + cutover.** Pagefind search, Giscus comments,
-  Buttondown newsletter, Leaflet map, gallery, `_redirects`, DNS flip.
+- ✅ **Phase 2 — Design.** Fonts, dark mode, featured-post hero, reading
+  time, 404 page.
+- ✅ **Phase 3 — Migration.** WordPress importer (`scripts/migrate-wp/`).
+- ✅ **Phase 4 — Extras.** Pagefind search, Leaflet map, gallery, Giscus
+  comments (configurable), Buttondown newsletter (configurable), Cloudflare
+  Web Analytics (configurable), `_redirects` placeholder.
+- ⏭️ **DNS cutover.** When ready: in Cloudflare Pages add custom domain
+  `geo-traveller.com`, then update DNS at Hostinger to point at Cloudflare.
 
 See [docs/superpowers/specs/2026-06-08-geo-traveller-rebuild-design.md](docs/superpowers/specs/2026-06-08-geo-traveller-rebuild-design.md)
 for the full design.
