@@ -72,6 +72,10 @@ main {
   margin: 0 auto;
   padding: 2rem 1.5rem 5rem;
 }
+@media (max-width: 600px) {
+  main { padding: 1rem 1rem 3rem; }
+  html { font-size: 17px; }
+}
 
 img {
   max-width: 100%;
@@ -425,6 +429,9 @@ a.featured:hover .read-more { color: var(--accent-deep); }
   gap: 3rem;
   align-items: start;
 }
+@media (max-width: 600px) {
+  .with-sidebar { gap: 2.5rem; }
+}
 .with-sidebar > .main-col {
   min-width: 0;
 }
@@ -485,6 +492,9 @@ a.featured:hover .read-more { color: var(--accent-deep); }
   justify-content: center;
   background: var(--bg-warm);
 }
+@media (max-width: 600px) {
+  .post-cover { max-height: 50vh; margin: 0 auto 2rem; }
+}
 .post-cover img {
   width: 100%;
   height: auto;
@@ -498,6 +508,17 @@ a.featured:hover .read-more { color: var(--accent-deep); }
   font-size: 1.05rem;
   line-height: 1.75;
   color: var(--fg-soft);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+@media (max-width: 600px) {
+  .post-body {
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+  .post-body > p:first-child::first-letter {
+    font-size: 3em;
+  }
 }
 .post-body > * + * { margin-top: 1.5em; }
 .post-body p { margin: 0; }
@@ -608,12 +629,14 @@ a.featured:hover .read-more { color: var(--accent-deep); }
   margin: 2rem 0;
 }
 
-/* Third-party embeds — video + social */
+/* Third-party embeds — video + social. Centered, capped width so they
+   don't dominate the column. */
 .post-body .embed {
   position: relative;
   width: 100%;
+  max-width: 32rem;
   aspect-ratio: 16 / 9;
-  margin: 2rem 0;
+  margin: 2rem auto;
   background: var(--bg-warm);
   border-radius: 4px;
   overflow: hidden;
@@ -629,10 +652,8 @@ a.featured:hover .read-more { color: var(--accent-deep); }
 .post-body .twitter-tweet,
 .post-body .instagram-media,
 .post-body .tiktok-embed {
-  /* While the embed scripts load, the blockquotes can show — give them
-     reasonable placeholder styling. */
   margin: 2rem auto !important;
-  max-width: 100% !important;
+  max-width: 32rem !important;
 }
 .post-body .fb-post {
   display: flex;
@@ -657,6 +678,8 @@ a.featured:hover .read-more { color: var(--accent-deep); }
   font-family: var(--font-sans);
   font-size: 0.92rem;
   margin: 2rem 0;
+  display: block;
+  overflow-x: auto;
 }
 .post-body th,
 .post-body td {
