@@ -15,6 +15,35 @@ export function setKnownPostSlugs(slugs: Iterable<string>): void {
 
 const SITE_HOSTS = new Set(['geo-traveller.com', 'www.geo-traveller.com']);
 
+function slugToLabel(slug: string): string {
+  return slug
+    .split('-')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+/**
+ * Convert bare in-text URLs to this site's legacy permalinks into proper
+ * markdown links. WordPress posts often contain a bare line like
+ * "Also read: https://geo-traveller.com/<slug>/" — left as plain text, the
+ * MDX auto-linker turns it into an <a> pointing at the dead root-level URL.
+ * Here we replace known-post URLs with [Title](/posts/<slug>/). External and
+ * unknown URLs are left untouched (they auto-link as before).
+ */
+function linkifyInternalBareUrls(text: string): string {
+  return text.replace(
+    /https?:\/\/(?:www\.)?geo-traveller\.com\/[^\s)\]]*/gi,
+    (full) => {
+      const rw = rewriteHref(full);
+      if (rw && rw.startsWith('/posts/')) {
+        const slug = rw.replace(/^\/posts\//, '').replace(/\/$/, '');
+        return `[${slugToLabel(slug)}](${rw})`;
+      }
+      return full;
+    }
+  );
+}
+
 /**
  * Rewrite a legacy root-level internal link (/<slug>/ or full URL to this site)
  * to /posts/<slug>/ when <slug> is a known post. Everything else is returned
@@ -64,9 +93,12 @@ function renderRich(rich: RichText[] | undefined): string {
   if (!rich) return '';
   return rich
     .map((r) => {
-      let text = escapeMdx(r.plain_text);
       const a = r.annotations;
-      if (a.code) text = `\`${r.plain_text}\``;
+      // Code spans render verbatim — never linkify or escape.
+      if (a.code) return `\`${r.plain_text}\``;
+      let text = escapeMdx(r.plain_text);
+      // Plain text (no explicit link annotation) may contain bare legacy URLs.
+      if (!r.href) text = linkifyInternalBareUrls(text);
       if (a.bold) text = `**${text}**`;
       if (a.italic) text = `*${text}*`;
       if (a.strikethrough) text = `~~${text}~~`;
@@ -248,11 +280,7 @@ export function renderEmbed(rawUrl: string): string {
   const url = rewriteHref(rawUrl) || rawUrl;
   if (url.startsWith('/posts/')) {
     const slug = url.replace(/^\/posts\//, '').replace(/\/$/, '');
-    const label = slug
-      .split('-')
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' ');
-    return `<a class="embed-link internal" href="${url}">${label} →</a>`;
+    return `<a class="embed-link internal" href="${url}">${slugToLabel(slug)} →</a>`;
   }
 
   // YouTube

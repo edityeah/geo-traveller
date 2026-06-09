@@ -6,9 +6,10 @@ dist
 
 # Notion-sourced posts (rebuilt every deploy)
 src/content/posts/notion/
-# public/img/generated/ is committed so GitHub Actions builds don't have to
-# re-fetch every image from the old WordPress URLs (which stopped resolving
-# after DNS cutover to Cloudflare Pages).
+# Images now live in Cloudflare R2 (images.geo-traveller.com). Builds upload
+# there; this folder only ever appears as a local-dev fallback when R2 env
+# vars are absent. Never commit it — it bloats the repo.
+public/img/generated/
 
 # OS
 .DS_Store
