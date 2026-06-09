@@ -10,6 +10,7 @@
     "build:search": "pagefind --site dist",
     "build": "npm run build:content && astro build && npm run build:search",
     "migrate": "tsx --env-file-if-exists=.env scripts/migrate-wp/migrate.ts",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name=geo-traveller --branch=main",
     "preview": "astro preview",
     "astro": "astro",
     "typecheck": "astro check"
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "wrangler": "^4.98.0"
   }
 }
