@@ -40,6 +40,8 @@ const ogImageAbs = ogImage
   : new URL(SITE.logo, Astro.site).toString();
 
 const cfaToken = import.meta.env.PUBLIC_CFA_TOKEN;
+const googleVerify = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
+const bingVerify = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
 
 // Pages flagged with `showInFooter` in Notion appear in the footer nav.
 const allPages = await getCollection('pages');
@@ -64,6 +66,8 @@ if (jsonLd) {
     <meta name="description" content={siteDescription} />
     <meta name="author" content={articleAuthor ?? SITE.author.name} />
     {noindex && <meta name="robots" content="noindex, follow" />}
+    {googleVerify && <meta name="google-site-verification" content={googleVerify} />}
+    {bingVerify && <meta name="msvalidate.01" content={bingVerify} />}
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/img/brand/logo-square.png" />
