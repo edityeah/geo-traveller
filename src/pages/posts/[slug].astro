@@ -1,11 +1,17 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Comments from '../../components/Comments.astro';
+import LegacyComments from '../../components/LegacyComments.astro';
 import Sidebar from '../../components/Sidebar.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import RelatedPosts from '../../components/RelatedPosts.astro';
+import ShareButtons from '../../components/ShareButtons.astro';
+import LikeButton from '../../components/LikeButton.astro';
+import TableOfContents from '../../components/TableOfContents.astro';
+import ReadingProgress from '../../components/ReadingProgress.astro';
+import AuthorBio from '../../components/AuthorBio.astro';
 import { getAllPosts, postSlug, tagSlug, readMinutes, formatDate } from '../../lib/posts';
-import { absoluteUrl, blogPostingLd, breadcrumbLd, countWords, deriveDescription, SITE } from '../../lib/seo';
+import { blogPostingLd, breadcrumbLd, countWords, deriveDescription, SITE } from '../../lib/seo';
 import { render } from 'astro:content';
 
 export async function getStaticPaths() {
@@ -17,7 +23,7 @@ export async function getStaticPaths() {
 }
 
 const { post } = Astro.props;
-const { Content } = await render(post);
+const { Content, headings } = await render(post);
 const date = formatDate(post.data.publishDate);
 const mins = readMinutes(post);
 const slug = postSlug(post);
@@ -57,6 +63,7 @@ const ld = [
   articleAuthor={SITE.author.name}
   jsonLd={ld}
 >
+  <ReadingProgress />
   <article class="with-sidebar">
     <div class="main-col post-main">
       <Breadcrumbs crumbs={[
@@ -80,9 +87,17 @@ const ld = [
         </div>
       )}
 
+      <TableOfContents headings={headings} />
+
       <div class="post-body" data-pagefind-body>
         <Content />
       </div>
+
+      <div class="post-engagement">
+        <LikeButton slug={slug} />
+      </div>
+
+      <ShareButtons url={url} title={post.data.title} />
 
       {post.data.tags && post.data.tags.length > 0 && (
         <footer class="post-footer">
@@ -93,9 +108,20 @@ const ld = [
         </footer>
       )}
 
+      <AuthorBio />
       <RelatedPosts current={post} />
+      <LegacyComments originalUrl={post.data.originalUrl} />
       <Comments />
     </div>
     <Sidebar currentSlug={slug} />
   </article>
 </Base>
+
+<style>
+  .post-engagement {
+    max-width: var(--measure);
+    margin: 2.5rem auto 0;
+    display: flex;
+    justify-content: center;
+  }
+</style>

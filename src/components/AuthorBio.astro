@@ -1,0 +1,95 @@
+---
+import { SITE } from '../lib/seo';
+---
+
+<aside class="author-bio">
+  <div class="author-avatar">
+    <img src="/img/brand/logo-square.png" alt="" loading="lazy" />
+  </div>
+  <div class="author-text">
+    <div class="author-kicker">Written by</div>
+    <h3>{SITE.author.name}</h3>
+    <p>
+      Travel writer and photographer documenting India and beyond. Writing about
+      trips, food, festivals, and the slow road. Find more stories on
+      <a href="/archive/">the archive</a>, or get in touch via the
+      <a href="/contact/">contact page</a>.
+    </p>
+    <div class="author-links">
+      <a href={SITE.author.sameAs[0]} target="_blank" rel="me noopener">Instagram</a>
+      <span>·</span>
+      <a href={SITE.author.sameAs[1]} target="_blank" rel="me noopener">LinkedIn</a>
+      <span>·</span>
+      <a href={`mailto:${SITE.author.email}`}>Email</a>
+    </div>
+  </div>
+</aside>
+
+<style>
+  .author-bio {
+    max-width: var(--measure);
+    margin: 3.5rem auto 0;
+    padding: 1.75rem;
+    background: var(--bg-warm);
+    border-radius: 4px;
+    display: grid;
+    grid-template-columns: 5rem 1fr;
+    gap: 1.5rem;
+    align-items: start;
+  }
+  .author-avatar {
+    width: 5rem;
+    height: 5rem;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .author-avatar img {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+  }
+  .author-kicker {
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
+  }
+  .author-text h3 {
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+  }
+  .author-text p {
+    font-size: 0.95rem;
+    color: var(--fg-soft);
+    line-height: 1.55;
+    margin: 0 0 0.75rem;
+  }
+  .author-links {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    color: var(--muted);
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .author-links a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .author-links a:hover { text-decoration: underline; }
+  @media (max-width: 600px) {
+    .author-bio { grid-template-columns: 1fr; text-align: left; }
+  }
+</style>

@@ -1,0 +1,70 @@
+---
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+  headings: MarkdownHeading[];
+}
+const { headings } = Astro.props;
+
+// Only show ToC for posts with enough structure.
+// Skip the post's <h1> (the title is already on the page). Keep h2 + h3.
+const items = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const showToc = items.length >= 3;
+---
+
+{showToc && (
+  <nav class="toc" aria-label="Table of contents">
+    <h3>In this post</h3>
+    <ol>
+      {items.map((h) => (
+        <li class={`toc-l${h.depth}`}>
+          <a href={`#${h.slug}`}>{h.text}</a>
+        </li>
+      ))}
+    </ol>
+  </nav>
+)}
+
+<style>
+  .toc {
+    background: var(--bg-warm);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 1.25rem 1.5rem;
+    margin: 0 auto 2.5rem;
+    max-width: var(--measure);
+    font-family: var(--font-sans);
+  }
+  .toc h3 {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin: 0 0 0.85rem;
+  }
+  .toc ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: toc;
+  }
+  .toc li {
+    counter-increment: toc;
+    line-height: 1.5;
+    margin: 0.2rem 0;
+  }
+  .toc-l3 { padding-left: 1.25rem; }
+  .toc a {
+    color: var(--fg-soft);
+    text-decoration: none;
+    font-size: 0.9rem;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+</style>
