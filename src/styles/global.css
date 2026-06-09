@@ -253,9 +253,17 @@ a.featured {
 }
 a.featured:hover { color: inherit; }
 .featured .cover {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
-  background: var(--rule);
+  background: var(--bg-warm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.featured .cover img {
+  object-fit: contain !important;
+  max-width: 100%;
+  max-height: 100%;
 }
 .featured .cover img {
   width: 100%;
@@ -353,15 +361,18 @@ a.featured:hover .read-more { color: var(--accent-deep); }
   color: inherit;
 }
 .card .cover {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
-  background: var(--rule);
+  background: var(--bg-warm);
   margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .card .cover img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   transition: transform 0.5s ease;
 }
 .card-link:hover .cover img { transform: scale(1.04); }
