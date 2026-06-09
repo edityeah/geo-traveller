@@ -24,9 +24,10 @@ type RowResult = {
 };
 
 function parseArgs(argv: string[]) {
-  const args = { file: '', dryRun: false, limit: Infinity };
+  const args = { file: '', dryRun: false, limit: Infinity, force: false };
   for (const a of argv.slice(2)) {
     if (a === '--dry-run') args.dryRun = true;
+    else if (a === '--force') args.force = true;
     else if (a.startsWith('--limit=')) args.limit = Number(a.split('=')[1]);
     else if (!a.startsWith('--')) args.file = a;
   }
@@ -48,6 +49,26 @@ async function main() {
   }
 
   const notion = token ? new Client({ auth: token }) : null;
+
+  // Pre-load existing slugs so we can skip duplicates on re-run.
+  const existingSlugs = new Set<string>();
+  if (!args.dryRun && !args.force && notion && databaseId) {
+    console.log(`[migrate] fetching existing slugs from Notion for dedup...`);
+    let cursor: string | undefined;
+    do {
+      const res = await notion.databases.query({
+        database_id: databaseId,
+        start_cursor: cursor,
+        page_size: 100,
+      });
+      for (const p of res.results) {
+        const slug = ((p as any).properties?.Slug?.rich_text?.[0]?.plain_text ?? '').trim();
+        if (slug) existingSlugs.add(slug);
+      }
+      cursor = res.has_more ? (res.next_cursor ?? undefined) : undefined;
+    } while (cursor);
+    console.log(`[migrate] ${existingSlugs.size} existing slugs in Notion (will skip)`);
+  }
 
   console.log(`[migrate] parsing ${args.file}`);
   const wp = await parseWxr(args.file);
@@ -75,6 +96,17 @@ async function main() {
       continue;
     }
 
+    if (existingSlugs.has(slug)) {
+      results.push({
+        title: post.title,
+        slug,
+        status: 'skipped',
+        warnings: ['already in Notion (use --force to re-import)'],
+      });
+      console.log(`[migrate] SKIP ${post.title} (slug exists)`);
+      continue;
+    }
+
     if (args.dryRun || !notion || !databaseId) {
       results.push({
         title: post.title,
@@ -95,7 +127,7 @@ async function main() {
       const tags = [...post.categories, ...post.tags].filter(
         (t, i, arr) => arr.indexOf(t) === i
       );
-      const { url } = await createMigratedPage(notion, {
+      const { url, warnings: createWarnings } = await createMigratedPage(notion, {
         databaseId,
         title: post.title,
         slug,
@@ -112,7 +144,7 @@ async function main() {
         slug,
         status: 'created',
         notionUrl: url,
-        warnings,
+        warnings: [...warnings, ...createWarnings],
       });
       console.log(`[migrate] OK  ${post.title}`);
     } catch (err: any) {

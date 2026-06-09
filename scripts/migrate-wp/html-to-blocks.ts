@@ -128,6 +128,15 @@ function isInline(tag: string): boolean {
   );
 }
 
+function isValidHref(href: string | undefined): boolean {
+  if (!href) return false;
+  const h = href.trim();
+  if (!h) return false;
+  // Must be absolute http(s) or mailto. Skip relative, hash-only, javascript:,
+  // and placeholder values left by WP plugins (e.g. "!#postLink!#").
+  return /^(https?:\/\/|mailto:)/i.test(h);
+}
+
 function collectInline(
   node: any,
   out: RichText[],
@@ -159,7 +168,7 @@ function collectInline(
       ann.code = true;
       break;
     case 'a':
-      href = node.attribs?.href;
+      if (isValidHref(node.attribs?.href)) href = node.attribs.href;
       break;
     case 'br':
       out.push(textRun('\n'));
