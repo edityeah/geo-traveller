@@ -1,0 +1,40 @@
+name: Trending-topic blog agent
+
+on:
+  # Run 3 times a day: 5am, 11am, 5pm UTC (~10:30am, 4:30pm, 10:30pm IST).
+  # Average 2 posts per run = ~6 drafts/day.
+  schedule:
+    - cron: '0 5 * * *'
+    - cron: '0 11 * * *'
+    - cron: '0 17 * * *'
+  workflow_dispatch:
+    inputs:
+      count:
+        description: 'How many posts to generate this run'
+        required: false
+        default: '2'
+
+concurrency:
+  group: agent
+  cancel-in-progress: false
+
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run the agent
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+        run: npm run agent -- ${{ github.event.inputs.count || '2' }}
