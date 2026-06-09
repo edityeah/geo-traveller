@@ -1,0 +1,16 @@
+---
+/**
+ * Loads the third-party widget scripts for Twitter, Instagram, TikTok, and
+ * Facebook embeds. Each script auto-detects its own blockquote/div
+ * placeholders and hydrates them. Async so they don't block render.
+ *
+ * Drop into post pages — these scripts are no-ops if no matching embed is
+ * present on the page.
+ */
+---
+
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<script async src="https://www.instagram.com/embed.js"></script>
+<script async src="https://www.tiktok.com/embed.js"></script>
+<div id="fb-root"></div>
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v18.0"></script>

@@ -607,6 +607,50 @@ a.featured:hover .read-more { color: var(--accent-deep); }
   border: 1px solid var(--rule);
   margin: 2rem 0;
 }
+
+/* Third-party embeds — video + social */
+.post-body .embed {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 2rem 0;
+  background: var(--bg-warm);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.post-body .embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+}
+.post-body .twitter-tweet,
+.post-body .instagram-media,
+.post-body .tiktok-embed {
+  /* While the embed scripts load, the blockquotes can show — give them
+     reasonable placeholder styling. */
+  margin: 2rem auto !important;
+  max-width: 100% !important;
+}
+.post-body .fb-post {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+}
+.post-body .embed-link {
+  display: inline-block;
+  padding: 0.5rem 0.85rem;
+  background: var(--bg-warm);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  color: var(--accent);
+  text-decoration: none;
+  word-break: break-all;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+}
 .post-body table {
   width: 100%;
   border-collapse: collapse;

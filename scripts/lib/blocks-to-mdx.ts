@@ -186,14 +186,42 @@ function escapeAttr(s: string): string {
   return s.replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
-function renderEmbed(url: string): string {
-  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
-  if (yt) {
-    return `<iframe width="560" height="315" src="https://www.youtube.com/embed/${yt[1]}" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+/**
+ * Render a third-party media URL as the appropriate embed HTML. The actual
+ * widget hydration (Twitter widgets.js, Instagram embed.js, etc.) is loaded
+ * from the post page layout once per page.
+ */
+export function renderEmbed(url: string): string {
+  // YouTube
+  let m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+  if (m) {
+    return `<div class="embed embed-yt"><iframe src="https://www.youtube.com/embed/${m[1]}" title="YouTube video" loading="lazy" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
   }
-  const vimeo = url.match(/vimeo\.com\/(\d+)/);
-  if (vimeo) {
-    return `<iframe src="https://player.vimeo.com/video/${vimeo[1]}" width="640" height="360" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+  // Vimeo
+  m = url.match(/vimeo\.com\/(\d+)/);
+  if (m) {
+    return `<div class="embed embed-vimeo"><iframe src="https://player.vimeo.com/video/${m[1]}" loading="lazy" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div>`;
   }
-  return `[${url}](${url})`;
+  // Twitter / X
+  if (/(?:^|\/\/)(?:www\.)?(?:twitter|x)\.com\/[^/]+\/status\/\d+/i.test(url)) {
+    return `<blockquote class="twitter-tweet" data-dnt="true" data-theme="light"><a href="${url}">View on X</a></blockquote>`;
+  }
+  // Instagram post or reel
+  m = url.match(/^https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|tv)\/([\w-]+)/);
+  if (m) {
+    const clean = url.split('?')[0].replace(/\/$/, '') + '/';
+    return `<blockquote class="instagram-media" data-instgrm-captioned data-instgrm-permalink="${clean}" data-instgrm-version="14"><a href="${clean}">View on Instagram</a></blockquote>`;
+  }
+  // TikTok
+  m = url.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
+  if (m) {
+    return `<blockquote class="tiktok-embed" cite="${url}" data-video-id="${m[1]}"><a href="${url}">View on TikTok</a></blockquote>`;
+  }
+  // Facebook post or video
+  if (/(?:facebook|fb)\.com\/.+\/(?:posts|videos|photos)\//i.test(url)) {
+    return `<div class="fb-post" data-href="${url}" data-width="500"></div>`;
+  }
+  // Generic fallback: an iframe attempt is risky (X-Frame-Options) so just
+  // make a tidy link card.
+  return `<a class="embed-link" href="${url}" target="_blank" rel="noopener">${url}</a>`;
 }

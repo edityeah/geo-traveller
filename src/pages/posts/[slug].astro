@@ -9,6 +9,7 @@ import LikeButton from '../../components/LikeButton.astro';
 import TableOfContents from '../../components/TableOfContents.astro';
 import ReadingProgress from '../../components/ReadingProgress.astro';
 import AuthorBio from '../../components/AuthorBio.astro';
+import EmbedScripts from '../../components/EmbedScripts.astro';
 import { getAllPosts, postSlug, tagSlug, readMinutes, formatDate } from '../../lib/posts';
 import { blogPostingLd, breadcrumbLd, countWords, deriveDescription, SITE } from '../../lib/seo';
 import { render } from 'astro:content';
@@ -111,6 +112,7 @@ const ld = [
       <RelatedPosts current={post} />
       <CommentSection slug={slug} originalUrl={post.data.originalUrl} />
     </div>
+    <EmbedScripts />
     <Sidebar currentSlug={slug} />
   </article>
 </Base>
