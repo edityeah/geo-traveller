@@ -184,7 +184,7 @@ async function renderBlock(
       return `> ${emoji}${inner}`;
     }
     case 'bookmark':
-      return `[${b.bookmark.url}](${b.bookmark.url})`;
+      return renderEmbed(b.bookmark.url);
     case 'embed':
       return renderEmbed(b.embed.url);
     case 'video': {
@@ -240,7 +240,21 @@ function escapeAttr(s: string): string {
  * widget hydration (Twitter widgets.js, Instagram embed.js, etc.) is loaded
  * from the post page layout once per page.
  */
-export function renderEmbed(url: string): string {
+export function renderEmbed(rawUrl: string): string {
+  // Correct legacy internal links first. A bookmark/embed block pointing at
+  // another post on this site (common after the WP migration) is rewritten to
+  // /posts/<slug>/ and rendered as a clean inline link rather than a link card
+  // showing a raw URL — which also avoids the auto-linked nested <a> bug.
+  const url = rewriteHref(rawUrl) || rawUrl;
+  if (url.startsWith('/posts/')) {
+    const slug = url.replace(/^\/posts\//, '').replace(/\/$/, '');
+    const label = slug
+      .split('-')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+    return `<a class="embed-link internal" href="${url}">${label} →</a>`;
+  }
+
   // YouTube
   let m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
   if (m) {
