@@ -142,6 +142,35 @@ async function renderBlock(
       const url = b.video.type === 'external' ? b.video.external.url : b.video.file.url;
       return renderEmbed(url);
     }
+    case 'table': {
+      // Fetch child rows.
+      const rows = await fetchBlocks(b.id);
+      const renderedRows: string[][] = [];
+      for (const r of rows) {
+        if (r.type !== 'table_row') continue;
+        const cells = (r as any).table_row.cells as RichText[][];
+        renderedRows.push(cells.map((c) => renderRich(c).replace(/\|/g, '\\|') || ' '));
+      }
+      if (renderedRows.length === 0) return null;
+      const width = Math.max(...renderedRows.map((r) => r.length));
+      const lines: string[] = [];
+      const padCells = (row: string[]) => {
+        const padded = [...row];
+        while (padded.length < width) padded.push(' ');
+        return '| ' + padded.join(' | ') + ' |';
+      };
+      if (b.table.has_column_header) {
+        lines.push(padCells(renderedRows[0]));
+        lines.push('| ' + Array(width).fill('---').join(' | ') + ' |');
+        for (let i = 1; i < renderedRows.length; i++) lines.push(padCells(renderedRows[i]));
+      } else {
+        // No header row — Markdown tables require a header, so insert a blank one.
+        lines.push('| ' + Array(width).fill(' ').join(' | ') + ' |');
+        lines.push('| ' + Array(width).fill('---').join(' | ') + ' |');
+        for (const r of renderedRows) lines.push(padCells(r));
+      }
+      return lines.join('\n');
+    }
     case 'table_of_contents':
     case 'breadcrumb':
     case 'column_list':

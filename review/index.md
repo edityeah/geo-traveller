@@ -1,0 +1,47 @@
+# Review index
+
+- [Ultimate Guide to Paragliding in Bir Billing: Adventure Awaits!](./01-paragliding-in-bir-billing.md) — 64 blocks
+- [Bhutan- A Perfect Tour from India under 25K!](./02-perfect-tour-to-bhutan-from-india.md) — 115 blocks
+- [Kedarkantha Winter Trek 2024- A Detailed Itinerary under 4999/-](./03-kedarkantha-winter-trek-2024.md) — 95 blocks
+- [Everything you need to know about ISKCON- Bengaluru!](./04-everything-you-need-to-know-about-iskcon-bengaluru-2.md) — 65 blocks
+- [All you need to know about The Victory Tower- The Qutub Minar Guide](./05-all-you-need-to-know-about-the-victory-tower-the-qutub-minar-guide.md) — 70 blocks
+- [Online Travel Agencies to use ChatGPT for Travel planning. Here how!](./06-chatgpt-for-travel-planning.md) — 21 blocks
+- [The only Indian Train You Get to Ride for Free!](./07-the-only-indian-train-you-get-to-ride-for-free.md) — 15 blocks
+- [Toll Tax Hike! Expressway travel to get costlier starting April 1st](./08-toll-tax-hike-expressway-travel-will-become-more-expensive-starting-april-1st.md) — 18 blocks
+- [Vistara now offers direct flights from Mumbai to Mauritius](./09-vistara-direct-flights-from-mumbai-to-mauritius.md) — 15 blocks
+- [All you need to know about the Liquid Trees!](./10-all-you-need-to-know-about-the-liquid-trees.md) — 35 blocks
+- [IRCTC releases a budget-friendly tour package from Ayodhya to Vaishno Devi](./11-irctc-releases-a-budget-friendly-tour-package-from-ayodhya-to-vaishno-devi.md) — 12 blocks
+- [Travel Gokarna the Right Way!](./12-travel-gokarna-the-right-way.md) — 67 blocks
+- [9 Lessons I Learnt On My First Trip To Bhutan](./13-9-lessons-i-learnt-on-my-first-trip-to-bhutan.md) — 57 blocks
+- [Did you know that there is a ‘Bangladesh’ in India too?](./14-did-you-know-that-there-is-a-bangladesh-in-india-too.md) — 13 blocks
+- [India's Hidden Airports Spark an Unbelievable Traffic Revolution!](./15-indias-hidden-airports-spark-an-unbelievable-traffic-revolution-2.md) — 9 blocks
+- [All Together Now Festival Performance Timings & Weather Forecast](./16-all-together-now-festival-performance-timings-weather-forecast.md) — 182 blocks
+- [Thailand Welcomes Indian Tourists with Visa-Free Entry](./17-thailand-welcomes-indian-tourists-with-visa-free-entry.md) — 14 blocks
+- [Delhi Dispatch: From Air Pollution Crisis To Fire Accidents, All The Latest Updates](./18-delhi-dispatch-from-air-pollution-crisis-to-fire-accidents-all-the-latest-updates.md) — 20 blocks
+- [Kerala Wins Global Responsible Tourism Award 2023](./19-kerala-wins-global-responsible-tourism-award-2023.md) — 18 blocks
+- [Indian Railways' New Luggage Weight Limit: What You Need to Know?](./20-indian-railways-new-luggage-weight-limit-what-you-need-to-know.md) — 11 blocks
+- [US Embassy in New Delhi Opens 2.5 Lakh Visa Slots, But Technical Glitch Affects 2023 Appointments"](./21-us-embassy-in-new-delhi-opens-2-5-lakh-visa-slots-but-technical-glitch-affects-2023-appointments.md) — 19 blocks
+- [Countdown begins! Top 15 Must-Attend Cultural Festivals Across India before the year ends](./22-countdown-begins-top-15-must-attend-cultural-festivals-across-india-before-the-year-ends.md) — 77 blocks
+- [Vistara Airlines Introduces In-Flight Wi-Fi: A Milestone for Indian Aviation](./23-vistara-airlines-introduces-in-flight-wi-fi-a-milestone-for-indian-aviation.md) — 13 blocks
+- [Varanasi's Festival of Lights with More Than A Million Diyas Lighting Up The Ghat: Experience the Magic of Dev Deepawali](./24-varanasis-festival-of-lights-with-more-than-a-million-diyas-lighting-up-the-ghat-experience-the-magic-of-dev-deepawali.md) — 15 blocks
+- [IndiGo and Qantas Enhance Connectivity with Extended Codeshare Agreement: A Strategic Move in the Aviation Industry](./25-indigo-and-qantas-enhance-connectivity-with-extended-codeshare-agreement-a-strategic-move-in-the-aviation-industry.md) — 12 blocks
+- [Japan's New Island: A Majestic Creation from an Underwater Volcanic Eruption"](./26-japans-new-island-a-majestic-creation-from-an-underwater-volcanic-eruption.md) — 9 blocks
+- [Afghanistan Cricketer Rahmanullah Gurbaz Touches Hearts in Ahmedabad with Kind Gesture on Diwali Eve](./27-afghanistan-cricketer-rahmanullah-gurbaz-touches-hearts-in-ahmedabad-with-kind-gesture-on-diwali-eve.md) — 8 blocks
+- [Get Ready For "Delhi is Cooking", The Biggest Food & Music Festival By Coca-Cola, Delhiites!](./28-get-ready-for-delhi-is-cooking-the-biggest-food-music-festival-by-coca-cola-delhiites.md) — 17 blocks
+- [Gear Up for SneakinOut 3.0: India's Premier Sneaker and Lifestyle Festival!](./29-gear-up-for-sneakinout-3-0-indias-premier-sneaker-and-lifestyle-festival.md) — 20 blocks
+- [Bangalore Literature Festival 2023: A Literary Extravaganza You Can't Miss](./30-bangalore-literature-festival-2023-a-literary-extravaganza-you-cant-miss.md) — 10 blocks
+- [Uttar Pradesh's Pioneering Move: Bundelkhand Expressway to Transform into a Solar-Powered Marvel, Aiming for 50 MW Power Generation](./31-uttar-pradeshs-pioneering-move-bundelkhand-expressway-to-transform-into-a-solar-powered-marvel-aiming-for-50-mw-power-generation.md) — 14 blocks
+- [Taylor Swift's 'Eras Tour' Film Premieres in India: A Cinematic Celebration](./32-taylor-swifts-eras-tour-film-premieres-in-india-a-cinematic-celebration.md) — 10 blocks
+- [Delhi to Manali in Just 10 Hours: Sundernagar-Kiratpur Highway Revolutionizes Travel](./33-delhi-to-manali-in-just-10-hours-sundernagar-kiratpur-highway-revolutionizes-travel.md) — 9 blocks
+- [Zomaland 2023: Delhi's Culinary and Entertainment Extravaganza Featuring Jay Sean &amp; Juggy D](./34-zomaland-2023-delhis-culinary-and-entertainment-extravaganza-featuring-jay-sean-juggy-d.md) — 14 blocks
+- [Exploring the Culinary Tradition of Ajmer Sharif Dargah: Chef Vikas Khanna's 4,800 Kg Meethe Chawal Preparation](./35-exploring-the-culinary-tradition-of-ajmer-sharif-dargah-chef-vikas-khannas-4800-kg-meethe-chawal-preparation.md) — 10 blocks
+- [Ahmedabad's Enchanting Winter Wonderland: A Festive Extravaganza Returns for Its Second Edition](./36-ahmedabads-enchanting-winter-wonderland-a-festive-extravaganza-returns-for-its-second-edition.md) — 15 blocks
+- [Indonesia May Be Next In Line To Offer Visa-Free Entry To Indian Travellers](./37-indonesia-may-be-next-in-line-to-offer-visa-free-entry-to-indian-travellers.md) — 13 blocks
+- [Explore the New Horizon: Air India's Daily Direct Flights from Bhuj to Mumbai](./38-explore-the-new-horizon-air-indias-daily-direct-flights-from-bhuj-to-mumbai.md) — 11 blocks
+- [Beyond Tourism - The Healthcare Crisis in Maldives Amidst Diplomatic Strains with India](./39-beyond-tourism-the-healthcare-crisis-in-maldives-amidst-diplomatic-strains-with-india.md) — 10 blocks
+- [KGAF 2024: Mumbai's Artistic Heart Beats Again at the Kala Ghoda Arts Festival](./40-kgaf-2024-mumbais-artistic-heart-beats-again-at-the-kala-ghoda-arts-festival.md) — 18 blocks
+- [Exploring Ayodhya: A Ride in Pink with Women-Driven Electric Autos](./41-exploring-ayodhya-a-ride-in-pink-with-women-driven-electric-autos.md) — 14 blocks
+- [The Banaras Blog- Ultimate Travel Guide for Planning a Trip in 2024](./42-explore-varanasi-2024-travel-guide.md) — 43 blocks
+- [Kochi Airport Makes History as Kerala's First to Facilitate International Pet Travel](./43-kochi-airport-makes-history-as-keralas-first-to-facilitate-international-pet-travel.md) — 11 blocks
+- [Bir Billing Itinerary: An Offbeat Getaway in Himachal Pradesh](./44-the-ultimate-bir-billing-itinerary-an-offbeat-getaway-in-himachal-pradesh.md) — 66 blocks
+- [Must-Visit Cafés in Shimla That Will Make You Return Again and Again](./45-must-visit-cafes-in-shimla-that-will-make-you-return-again-and-again.md) — 34 blocks

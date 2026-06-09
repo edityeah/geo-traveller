@@ -10,7 +10,7 @@ import { mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fetchPublishedPosts, extractProps, notionConfigured } from './lib/notion.js';
 import { blocksToMdx } from './lib/blocks-to-mdx.js';
-import { mirrorImage } from './lib/image-mirror.js';
+import { mirrorImage, mirrorFailures } from './lib/image-mirror.js';
 
 const ROOT = process.cwd();
 const OUT_DIR = join(ROOT, 'src', 'content', 'posts', 'notion');
@@ -86,8 +86,14 @@ async function main() {
   }
 
   if (warnings.length) {
-    console.log(`\n[build-content] ${warnings.length} warning(s):`);
+    console.log(`\n[build-content] ${warnings.length} block warning(s):`);
     for (const w of warnings.slice(0, 20)) console.log('  - ' + w);
+  }
+  if (mirrorFailures.length) {
+    console.log(`\n[build-content] ${mirrorFailures.length} image(s) could not be mirrored (using original URL — may 404):`);
+    for (const f of mirrorFailures.slice(0, 30)) {
+      console.log(`  - [${f.slug}] ${f.reason}: ${f.url}`);
+    }
   }
 }
 
