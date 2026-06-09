@@ -48,53 +48,127 @@ interface NavItem {
   href?: string;
   children?: NavItem[];
 }
-
-function renderItemId(label: string): string {
-  return label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-}
 ---
 
-<nav class="site-nav">
-  {nav.map((item) => (
-    item.children ? (
-      <div class="nav-group">
-        {item.href ? (
-          <a href={item.href} class="nav-top">{item.label} <span class="caret">▾</span></a>
-        ) : (
-          <button type="button" class="nav-top" aria-expanded="false">{item.label} <span class="caret">▾</span></button>
-        )}
-        <div class="nav-dropdown">
-          {item.children.map((child) => (
-            child.children ? (
-              <div class="nav-sub">
-                {child.href ? (
-                  <a href={child.href} class="nav-sub-top">{child.label} <span class="caret">›</span></a>
-                ) : (
-                  <span class="nav-sub-top">{child.label} <span class="caret">›</span></span>
-                )}
-                <div class="nav-subdropdown">
-                  {child.children.map((sub) => (
-                    <a href={sub.href}>{sub.label}</a>
-                  ))}
+<nav class="site-nav" data-nav>
+  <button type="button" class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+    <span class="bar"></span>
+    <span class="bar"></span>
+    <span class="bar"></span>
+  </button>
+
+  <div class="nav-links" id="nav-links">
+    {nav.map((item) => (
+      item.children ? (
+        <div class="nav-group">
+          {item.href ? (
+            <a href={item.href} class="nav-top">
+              {item.label}
+              <button type="button" class="caret-btn" aria-label={`Toggle ${item.label} submenu`} aria-expanded="false"><span class="caret">▾</span></button>
+            </a>
+          ) : (
+            <button type="button" class="nav-top" aria-expanded="false">{item.label} <span class="caret">▾</span></button>
+          )}
+          <div class="nav-dropdown">
+            {item.children.map((child) => (
+              child.children ? (
+                <div class="nav-sub">
+                  {child.href ? (
+                    <a href={child.href} class="nav-sub-top">
+                      {child.label}
+                      <button type="button" class="caret-btn" aria-label={`Toggle ${child.label} submenu`} aria-expanded="false"><span class="caret">›</span></button>
+                    </a>
+                  ) : (
+                    <span class="nav-sub-top">{child.label} <span class="caret">›</span></span>
+                  )}
+                  <div class="nav-subdropdown">
+                    {child.children.map((sub) => (
+                      <a href={sub.href}>{sub.label}</a>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <a href={child.href}>{child.label}</a>
-            )
-          ))}
+              ) : (
+                <a href={child.href}>{child.label}</a>
+              )
+            ))}
+          </div>
         </div>
-      </div>
-    ) : (
-      <a class="nav-top" href={item.href}>{item.label}</a>
-    )
-  ))}
+      ) : (
+        <a class="nav-top" href={item.href}>{item.label}</a>
+      )
+    ))}
+  </div>
 </nav>
+
+<script>
+  // Mobile nav behaviour. On desktop the CSS :hover rules handle dropdowns
+  // and this script stays out of the way.
+  const mq = window.matchMedia('(max-width: 720px)');
+
+  document.querySelectorAll('[data-nav]').forEach((navEl) => {
+    const nav = navEl as HTMLElement;
+    const toggle = nav.querySelector('.nav-toggle') as HTMLButtonElement | null;
+
+    // Hamburger opens/closes the whole drawer.
+    toggle?.addEventListener('click', () => {
+      const open = nav.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      document.body.classList.toggle('nav-open', open);
+    });
+
+    // Close the drawer when a real navigation link (leaf) is tapped.
+    nav.querySelectorAll('.nav-links a').forEach((a) => {
+      a.addEventListener('click', (e) => {
+        // Don't close if the tap was on a caret toggle inside the link.
+        if ((e.target as HTMLElement).closest('.caret-btn')) return;
+        if (mq.matches) {
+          nav.classList.remove('open');
+          document.body.classList.remove('nav-open');
+          toggle?.setAttribute('aria-expanded', 'false');
+          toggle?.setAttribute('aria-label', 'Open menu');
+        }
+      });
+    });
+
+    // Accordion expand/collapse — only on mobile.
+    function bindAccordion(triggerSel: string, parentSel: string) {
+      nav.querySelectorAll(triggerSel).forEach((el) => {
+        el.addEventListener('click', (e) => {
+          if (!mq.matches) return;
+          const parent = (e.currentTarget as HTMLElement).closest(parentSel) as HTMLElement | null;
+          if (!parent) return;
+          // A caret button inside a link: stop the link from navigating.
+          if ((e.currentTarget as HTMLElement).classList.contains('caret-btn') ||
+              (e.currentTarget as HTMLElement).tagName === 'BUTTON') {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          const expanded = parent.classList.toggle('expanded');
+          const ctrl = parent.querySelector('.nav-top, .nav-sub-top, .caret-btn');
+          ctrl?.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        });
+      });
+    }
+
+    // Top-level groups: <button class="nav-top"> and the caret button inside <a class="nav-top">
+    bindAccordion('.nav-group > button.nav-top', '.nav-group');
+    bindAccordion('.nav-group > a.nav-top > .caret-btn', '.nav-group');
+    // Sub-level groups (e.g. India)
+    bindAccordion('.nav-sub > .nav-sub-top:not(a)', '.nav-sub');
+    bindAccordion('.nav-sub > a.nav-sub-top > .caret-btn', '.nav-sub');
+  });
+</script>
 
 <style>
   .site-nav {
     font-family: var(--font-sans);
     font-size: 0.875rem;
     font-weight: 500;
+    display: flex;
+    align-items: center;
+  }
+  .nav-links {
     display: flex;
     gap: 1.5rem;
     align-items: center;
@@ -113,6 +187,40 @@ function renderItemId(label: string): string {
   }
   .nav-top:hover { color: var(--fg); }
   .caret { font-size: 0.65em; opacity: 0.7; }
+  .caret-btn {
+    background: none;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Hamburger — hidden on desktop. */
+  .nav-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0.5rem;
+    margin-right: 0.25rem;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+  .nav-toggle .bar {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background: var(--fg);
+    border-radius: 2px;
+    transition: transform 0.25s ease, opacity 0.2s ease;
+  }
 
   .nav-group {
     position: relative;
@@ -187,24 +295,86 @@ function renderItemId(label: string): string {
     display: block;
   }
 
+  /* ───────── Mobile: hamburger drawer + accordion ───────── */
   @media (max-width: 720px) {
-    .site-nav { gap: 1rem; flex-wrap: wrap; }
+    .nav-toggle { display: flex; }
+
+    /* The drawer slides down below the header. */
+    .nav-links {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      background: var(--bg-elev);
+      border-bottom: 1px solid var(--rule);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+      padding: 0.5rem 0;
+      max-height: calc(100vh - 100%);
+      overflow-y: auto;
+      z-index: 100;
+      /* Hidden until the hamburger opens it. */
+      display: none;
+    }
+    .site-nav.open .nav-links { display: flex; }
+
+    /* Animate the hamburger into an X when open. */
+    .site-nav.open .nav-toggle .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .site-nav.open .nav-toggle .bar:nth-child(2) { opacity: 0; }
+    .site-nav.open .nav-toggle .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* Each top-level item becomes a full-width row. */
+    .nav-links > .nav-top,
+    .nav-group > .nav-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 0.85rem 1.25rem;
+      font-size: 1rem;
+      border-bottom: 1px solid var(--rule);
+    }
+    .nav-group { position: static; }
+
+    /* Dropdowns: static, collapsed by default, revealed via .expanded (JS). */
     .nav-dropdown,
     .nav-subdropdown {
       position: static;
+      display: none;
       box-shadow: none;
       border: 0;
+      border-radius: 0;
       padding: 0;
-      background: none;
-      min-width: auto;
+      background: var(--bg-warm);
+      min-width: 0;
     }
-    .nav-group:hover > .nav-dropdown { display: block; }
+    /* Hover no longer reveals — tap (accordion) does. */
+    .nav-group:hover > .nav-dropdown,
+    .nav-group:focus-within > .nav-dropdown,
+    .nav-sub:hover > .nav-subdropdown,
+    .nav-sub:focus-within > .nav-subdropdown { display: none; }
+    .nav-group.expanded > .nav-dropdown,
+    .nav-sub.expanded > .nav-subdropdown { display: block; }
+
     .nav-dropdown a,
     .nav-sub-top,
     .nav-subdropdown a {
-      padding: 0.25rem 0.5rem;
-      font-size: 0.8rem;
+      padding: 0.7rem 1.25rem 0.7rem 2rem;
+      font-size: 0.95rem;
+      border-bottom: 1px solid var(--rule);
     }
-    .nav-subdropdown { padding-left: 1rem; }
+    .nav-subdropdown a { padding-left: 2.75rem; }
+
+    /* Caret as a tap target on mobile. */
+    .caret-btn {
+      padding: 0.25rem 0.5rem;
+      margin: -0.25rem -0.5rem -0.25rem 0;
+    }
+    .caret { font-size: 0.9em; opacity: 0.8; transition: transform 0.2s ease; }
+    .nav-group.expanded > .nav-top .caret,
+    .nav-group.expanded > .nav-top .caret-btn .caret,
+    .nav-sub.expanded > .nav-sub-top .caret { transform: rotate(180deg); }
   }
 </style>

@@ -106,6 +106,8 @@ figcaption {
   margin: 0 auto;
   width: 100%;
   gap: 2rem;
+  /* Anchor for the mobile nav drawer (positioned absolute inside SiteNav). */
+  position: relative;
 }
 .site-header .brand {
   display: inline-flex;
@@ -121,6 +123,10 @@ figcaption {
 }
 @media (max-width: 720px) {
   .site-header .brand img { height: 2.75rem; }
+  /* Hamburger (inside .site-nav) sits to the LEFT of the logo. */
+  .site-header { justify-content: flex-start; gap: 0.5rem; }
+  .site-header .site-nav { order: -1; }
+  .site-header .brand { margin-right: auto; }
 }
 .footer-brand img {
   /* same logic — the cropped PNG fills its container, so shrink the footer
@@ -203,12 +209,12 @@ figcaption {
 
 @media (max-width: 480px) {
   .site-header {
-    padding: 1rem 1.25rem;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
+    padding: 0.5rem 1rem;
   }
 }
+
+/* Lock background scroll while the mobile nav drawer is open. */
+body.nav-open { overflow: hidden; }
 
 /* Reusable kicker */
 .kicker {
