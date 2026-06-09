@@ -168,7 +168,9 @@ export async function publishToNotion(post: GeneratedPost, coverUrl?: string): P
     'Publish Date': { date: { start: new Date().toISOString().slice(0, 10) } },
     Tags: { multi_select: post.tags.map((t) => ({ name: t.slice(0, 100) })) },
     Excerpt: { rich_text: richText(post.excerpt) },
-    'Original URL': { url: post.sourceUrl },
+    // Source URL is only for the agent's de-dup tracking. Original URL is
+    // reserved for the WP-migration use case (the actual old WordPress URL).
+    'Source URL': { url: post.sourceUrl },
   };
   if (post.locationName) {
     properties['Location Name'] = { rich_text: richText(post.locationName) };
@@ -193,7 +195,7 @@ export async function publishToNotion(post: GeneratedPost, coverUrl?: string): P
   return { pageId: page.id, url: (page as any).url ?? '' };
 }
 
-export async function existingSourceUrls(lookbackHours = 72): Promise<Set<string>> {
+export async function existingSourceUrls(): Promise<Set<string>> {
   const set = new Set<string>();
   let cursor: string | undefined;
   do {
@@ -204,8 +206,11 @@ export async function existingSourceUrls(lookbackHours = 72): Promise<Set<string
     });
     for (const p of res.results) {
       if (!isFullPage(p)) continue;
-      const url = (p.properties as any)['Original URL']?.url;
-      if (url) set.add(url);
+      const props = p.properties as any;
+      // Check both the new Source URL and the legacy Original URL slot,
+      // so de-dup still catches agent posts created before the schema split.
+      const src = props['Source URL']?.url ?? props['Original URL']?.url;
+      if (src) set.add(src);
     }
     cursor = res.has_more ? (res.next_cursor ?? undefined) : undefined;
   } while (cursor);
