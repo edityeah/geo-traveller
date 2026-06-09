@@ -38,6 +38,17 @@ jobs:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           NOTION_PAGES_DATABASE_ID: ${{ secrets.NOTION_PAGES_DATABASE_ID }}
+          # PUBLIC_* env vars are inlined at build time by Astro/Vite.
+          # They must be present here, not at runtime, to ship to the browser.
+          PUBLIC_CLARITY_ID: ${{ secrets.PUBLIC_CLARITY_ID }}
+          PUBLIC_CFA_TOKEN: ${{ secrets.PUBLIC_CFA_TOKEN }}
+          PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ secrets.PUBLIC_GOOGLE_SITE_VERIFICATION }}
+          PUBLIC_BING_SITE_VERIFICATION: ${{ secrets.PUBLIC_BING_SITE_VERIFICATION }}
+          PUBLIC_BUTTONDOWN_USER: ${{ secrets.PUBLIC_BUTTONDOWN_USER }}
+          PUBLIC_GISCUS_REPO: ${{ secrets.PUBLIC_GISCUS_REPO }}
+          PUBLIC_GISCUS_REPO_ID: ${{ secrets.PUBLIC_GISCUS_REPO_ID }}
+          PUBLIC_GISCUS_CATEGORY: ${{ secrets.PUBLIC_GISCUS_CATEGORY }}
+          PUBLIC_GISCUS_CATEGORY_ID: ${{ secrets.PUBLIC_GISCUS_CATEGORY_ID }}
         run: npm run build
 
       - name: Deploy to Cloudflare Pages
