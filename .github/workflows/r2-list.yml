@@ -1,0 +1,20 @@
+name: R2 list (debug)
+
+# One-shot: dump first 30 object keys from the bucket.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Install wrangler
+        run: npm install --no-save wrangler@4
+      - env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          echo "=== First 30 object keys ==="
+          npx wrangler r2 object list geo-traveller-images 2>&1 | head -60
