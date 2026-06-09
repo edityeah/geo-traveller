@@ -68,6 +68,34 @@ async function fromNewsApi(): Promise<Candidate[]> {
   })).filter((c: Candidate) => c.title && c.url);
 }
 
+function extractImageFromItem(it: any, descriptionHtml: string): string | undefined {
+  // 1. <media:content url="..."> or <media:thumbnail url="...">
+  const mc = it['media:content'] ?? it['media:thumbnail'];
+  if (mc) {
+    const arr = Array.isArray(mc) ? mc : [mc];
+    for (const m of arr) {
+      const url = m?.['@_url'];
+      if (url) return String(url);
+    }
+  }
+  // 2. <enclosure url="..." type="image/..."/>
+  const enc = it.enclosure;
+  if (enc) {
+    const arr = Array.isArray(enc) ? enc : [enc];
+    for (const e of arr) {
+      const type = String(e?.['@_type'] ?? '');
+      if (type.startsWith('image/')) {
+        const url = e?.['@_url'];
+        if (url) return String(url);
+      }
+    }
+  }
+  // 3. First <img src="..."> inside the description HTML
+  const m = descriptionHtml.match(/<img[^>]+src=["']([^"']+)["']/i);
+  if (m) return m[1];
+  return undefined;
+}
+
 async function fetchRss(feedUrl: string, sourceName: string): Promise<Candidate[]> {
   const r = await fetch(feedUrl, { headers: { 'User-Agent': 'geo-traveller-agent/1.0' } });
   if (!r.ok) return [];
@@ -80,13 +108,16 @@ async function fetchRss(feedUrl: string, sourceName: string): Promise<Candidate[
   return list.map((it: any) => {
     const title = String(it.title?.['#text'] ?? it.title ?? '').trim();
     const link = String(it.link?.['@_href'] ?? it.link ?? '').trim();
-    const description = String(it.description ?? it.summary ?? '').replace(/<[^>]+>/g, '').trim().slice(0, 400);
+    const descriptionRaw = String(it.description ?? it.summary ?? it['content:encoded'] ?? '');
+    const description = descriptionRaw.replace(/<[^>]+>/g, '').trim().slice(0, 400);
     const date = String(it.pubDate ?? it.published ?? it.updated ?? new Date().toISOString());
+    const imageUrl = extractImageFromItem(it, descriptionRaw);
     return {
       title,
       summary: description,
       url: link,
       source: sourceName,
+      imageUrl,
       publishedAt: new Date(date).toISOString(),
     } as Candidate;
   }).filter((c: Candidate) => c.title && c.url);

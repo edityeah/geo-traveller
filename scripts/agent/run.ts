@@ -93,15 +93,25 @@ async function main() {
       let slug = post.slug || slugifyTitle(post.title);
       slug = slug.replace(/[^a-z0-9-]/g, '');
 
-      const cover = await pickCover({
+      // Build broader fallback queries from tags + location so something
+      // always lands, even when the LLM's specific query is too niche.
+      const fallbackQueries = [
+        post.locationName,
+        post.tags?.[0],
+        post.tags?.slice(0, 2).join(' '),
+      ].filter((q): q is string => Boolean(q));
+
+      const coverPick = await pickCover({
         candidateImageUrl: candidate.imageUrl,
+        candidateUrl: candidate.url,
         unsplashQuery: post.coverQuery,
+        fallbackQueries,
       });
-      if (cover) console.log(`        cover: ${cover.slice(0, 80)}`);
+      console.log(`        cover: ${coverPick.source}${coverPick.url ? ' → ' + coverPick.url.slice(0, 80) : ' (none!)'}`);
 
       const { url: notionUrl } = await publishToNotion(
         { ...post, slug, body: bodyWithImages },
-        cover
+        coverPick.url
       );
       console.log(`        published to Notion: ${notionUrl}`);
       made++;
