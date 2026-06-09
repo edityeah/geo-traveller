@@ -33,11 +33,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install wrangler (for R2 uploads at build time)
+        run: npm install --no-save wrangler@4
+
       - name: Build site (pulls latest from Notion)
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           NOTION_PAGES_DATABASE_ID: ${{ secrets.NOTION_PAGES_DATABASE_ID }}
+          # R2 image backend — when set, mirrorImage() uploads to R2
+          # instead of writing to public/img/generated/.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          R2_BUCKET: geo-traveller-images
+          R2_PUBLIC_BASE: https://images.geo-traveller.com
           # PUBLIC_* env vars are inlined at build time by Astro/Vite.
           # They must be present here, not at runtime, to ship to the browser.
           PUBLIC_CLARITY_ID: ${{ secrets.PUBLIC_CLARITY_ID }}

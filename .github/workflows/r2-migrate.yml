@@ -1,0 +1,102 @@
+name: One-shot R2 migration
+
+# Manually triggered. Idempotent: safe to re-run.
+# Creates the R2 bucket, attaches images.geo-traveller.com as a custom domain,
+# and uploads every file under public/img/generated/ to the bucket preserving
+# its relative path. After this runs successfully, future builds upload net-new
+# images directly to R2 and the local public/img/generated/ folder can be
+# removed from the repo.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  BUCKET: geo-traveller-images
+  PUBLIC_DOMAIN: images.geo-traveller.com
+  ZONE: geo-traveller.com
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install wrangler
+        run: npm install --no-save wrangler@4
+
+      - name: Create R2 bucket (idempotent)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler r2 bucket create "$BUCKET" 2>&1 | tee /tmp/bucket.log || true
+          if grep -qi "already exists\|conflict" /tmp/bucket.log; then
+            echo "Bucket already exists — continuing."
+          fi
+
+      - name: Attach custom domain (idempotent)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Look up the zone id for geo-traveller.com
+          ZONE_ID=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones?name=$ZONE" | \
+            node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);console.log(j.result?.[0]?.id||"")})')
+          echo "ZONE_ID=$ZONE_ID"
+          if [ -z "$ZONE_ID" ]; then
+            echo "Could not resolve zone id for $ZONE — aborting domain step."
+            exit 1
+          fi
+          npx wrangler r2 bucket domain add "$BUCKET" \
+            --domain "$PUBLIC_DOMAIN" \
+            --zone-id "$ZONE_ID" \
+            --min-tls 1.2 2>&1 | tee /tmp/domain.log || true
+          if grep -qiE "already|exist|conflict" /tmp/domain.log; then
+            echo "Custom domain already attached — continuing."
+          fi
+
+      - name: Upload all images in public/img/generated/
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ ! -d public/img/generated ]; then
+            echo "No public/img/generated/ folder — nothing to upload."
+            exit 0
+          fi
+          cd public/img/generated
+          UPLOADED=0
+          SKIPPED=0
+          # Use find so subdirectories are walked.
+          while IFS= read -r f; do
+            KEY="${f#./}"
+            # HEAD first so re-runs are cheap.
+            if curl -fsI "https://${PUBLIC_DOMAIN}/${KEY}" -o /dev/null; then
+              SKIPPED=$((SKIPPED+1))
+              continue
+            fi
+            CT=$(file --mime-type -b "$f")
+            npx wrangler r2 object put "${BUCKET}/${KEY}" --file "$f" --content-type "$CT" >/dev/null 2>&1 \
+              && UPLOADED=$((UPLOADED+1)) \
+              || echo "FAIL: $KEY"
+          done < <(find . -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.gif' -o -iname '*.webp' -o -iname '*.avif' -o -iname '*.svg' \))
+          echo "Uploaded: $UPLOADED, skipped (already in R2): $SKIPPED"
+
+      - name: Summary
+        run: |
+          echo "Public base: https://${PUBLIC_DOMAIN}/"
+          echo "Test one URL:"
+          ANY=$(find public/img/generated -type f | head -1 | sed 's|public/img/generated/||')
+          if [ -n "$ANY" ]; then
+            echo "  https://${PUBLIC_DOMAIN}/${ANY}"
+            curl -sI "https://${PUBLIC_DOMAIN}/${ANY}" | head -3
+          fi
