@@ -13,6 +13,10 @@ on:
         description: 'How many posts to generate this run'
         required: false
         default: '2'
+      regen_page_id:
+        description: 'If set, regenerate this Notion page id instead of discovering new posts'
+        required: false
+        default: ''
 
 concurrency:
   group: agent
@@ -37,4 +41,10 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-        run: npm run agent -- ${{ github.event.inputs.count || '2' }}
+          REGEN_PAGE_ID: ${{ github.event.inputs.regen_page_id }}
+        run: |
+          if [ -n "$REGEN_PAGE_ID" ]; then
+            npx tsx scripts/agent/regen.ts "$REGEN_PAGE_ID"
+          else
+            npm run agent -- ${{ github.event.inputs.count || '2' }}
+          fi
