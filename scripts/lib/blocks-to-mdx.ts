@@ -2,6 +2,48 @@ import type { BlockObjectResponse } from '@notionhq/client/build/src/api-endpoin
 import { fetchBlocks } from './notion.js';
 import { mirrorImage } from './image-mirror.js';
 
+// ── Internal-link rewriting ──────────────────────────────────────────────────
+// Posts migrated from WordPress carry legacy internal links in WP permalink
+// form: https://geo-traveller.com/<slug>/ or /<slug>/ — but every post now
+// lives under /posts/<slug>/. Build-content seeds this set with all known post
+// slugs so renderRich() can rewrite those links to the correct path.
+const knownPostSlugs = new Set<string>();
+export function setKnownPostSlugs(slugs: Iterable<string>): void {
+  knownPostSlugs.clear();
+  for (const s of slugs) knownPostSlugs.add(s);
+}
+
+const SITE_HOSTS = new Set(['geo-traveller.com', 'www.geo-traveller.com']);
+
+/**
+ * Rewrite a legacy root-level internal link (/<slug>/ or full URL to this site)
+ * to /posts/<slug>/ when <slug> is a known post. Everything else is returned
+ * unchanged: external links, anchors, /tags/*, /map/, multi-segment paths, and
+ * links that already point at /posts/.
+ */
+export function rewriteHref(href: string | null): string | null {
+  if (!href) return href;
+  if (href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return href;
+
+  let pathname: string;
+  if (/^https?:\/\//i.test(href)) {
+    let u: URL;
+    try { u = new URL(href); } catch { return href; }
+    if (!SITE_HOSTS.has(u.hostname)) return href; // external — leave alone
+    pathname = u.pathname;
+  } else if (href.startsWith('/')) {
+    pathname = href.split('#')[0].split('?')[0];
+  } else {
+    return href; // relative-without-leading-slash — leave alone
+  }
+
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length === 1 && knownPostSlugs.has(segments[0])) {
+    return `/posts/${segments[0]}/`;
+  }
+  return href;
+}
+
 type RichText = {
   plain_text: string;
   href: string | null;
@@ -28,7 +70,7 @@ function renderRich(rich: RichText[] | undefined): string {
       if (a.bold) text = `**${text}**`;
       if (a.italic) text = `*${text}*`;
       if (a.strikethrough) text = `~~${text}~~`;
-      if (r.href) text = `[${text}](${r.href})`;
+      if (r.href) text = `[${text}](${rewriteHref(r.href)})`;
       return text;
     })
     .join('');
@@ -122,6 +164,13 @@ async function renderBlock(
         b.image.type === 'external' ? b.image.external.url : b.image.file.url;
       const caption = renderRich(b.image.caption as RichText[]);
       const mirrored = await mirrorImage(src, slug);
+      // A successful mirror ALWAYS returns an R2 or local path, never the
+      // original external URL. If we get the source URL back, the fetch failed
+      // (dead third-party hotlink). Omit it — a broken-image icon helps no one.
+      if (/^https?:\/\//i.test(src) && mirrored === src) {
+        ctx.warnings.push(`Dropped un-mirrorable inline image in ${slug}: ${src}`);
+        return '';
+      }
       const alt = caption || 'image';
       return caption
         ? `<figure>\n  <img src="${mirrored}" alt="${escapeAttr(alt)}" />\n  <figcaption>${caption}</figcaption>\n</figure>`

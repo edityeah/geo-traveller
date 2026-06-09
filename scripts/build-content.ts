@@ -17,7 +17,7 @@ import {
   notionConfigured,
   pagesConfigured,
 } from './lib/notion.js';
-import { blocksToMdx } from './lib/blocks-to-mdx.js';
+import { blocksToMdx, setKnownPostSlugs } from './lib/blocks-to-mdx.js';
 import { mirrorImage, mirrorFailures } from './lib/image-mirror.js';
 
 const ROOT = process.cwd();
@@ -55,6 +55,11 @@ async function buildPosts(warnings: string[]) {
   console.log('[build-content] Fetching published posts from Notion...');
   const pages = await fetchPublishedPosts();
   console.log(`[build-content] ${pages.length} posts to render`);
+
+  // Seed the link-rewriter with every known post slug, so legacy WordPress
+  // permalinks embedded in post bodies (/<slug>/) get corrected to /posts/<slug>/.
+  const allProps = pages.map((p) => extractProps(p));
+  setKnownPostSlugs(allProps.map((p) => p.slug).filter(Boolean) as string[]);
 
   await rm(POSTS_OUT, { recursive: true, force: true });
   await mkdir(POSTS_OUT, { recursive: true });
