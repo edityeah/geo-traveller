@@ -1,6 +1,9 @@
 /**
  * Generate a Geo-Traveller blog post from a trending news candidate.
  * Single Claude API call that returns structured output via tool use.
+ *
+ * Output includes inline image placeholders + entity backlinks + internal
+ * backlinks to other Geo-Traveller posts.
  */
 import Anthropic from '@anthropic-ai/sdk';
 import type { Candidate } from './discover.js';
@@ -8,20 +11,42 @@ import type { Candidate } from './discover.js';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY!;
 const MODEL = process.env.AGENT_MODEL ?? 'claude-sonnet-4-5-20250929';
 
-const SYSTEM = `You write for Geo-Traveller, a travel journal by Aditya Chaudhari covering India and the world. Your voice is observational, warm, and grounded — not promotional, not clickbait.
+export interface ExistingPost {
+  title: string;
+  slug: string;
+  tags: string[];
+  excerpt?: string;
+}
 
-Audience: travelers who want context, not just headlines. Indians traveling abroad. Curious readers about places and policies.
+const SYSTEM = `You write for Geo-Traveller, a travel journal by Aditya Chaudhari covering India and the world. Voice: observational, warm, grounded — not promotional, not clickbait.
 
-For each story you write:
-1. Lead with the actual news in plain language — what happened, why it matters to a traveler.
-2. Add useful context — prior history, related rules, what readers should do or watch for.
-3. Keep paragraphs short (2-3 sentences). Use markdown headings (##, ###) and lists where the structure helps.
-4. Length: 400-700 words. Don't pad.
-5. Acknowledge the source — close with "Source: [Outlet]" linking to the original article.
-6. Don't invent facts. If a detail isn't in the source, write around it.
-7. No emojis. No "In conclusion" filler. No "stay tuned for more updates" CTAs.
+Audience: travelers who want context. Indians traveling abroad, plus curious readers about places and policies.
 
-Output structured JSON via the publish_post tool.`;
+For each story:
+
+1. Lead with what happened in plain language and why it matters to a traveler.
+2. Add context — prior policy, history, comparable situations, what readers should do.
+3. Short paragraphs (2-3 sentences). Use ## and ### headings. Lists when they help.
+4. Length: 500-800 words. Don't pad.
+5. Don't invent facts. If a detail isn't in the source, write around it.
+6. No emojis. No "In conclusion", no "stay tuned" CTAs.
+7. Do NOT cite the source article or include any "Source:" line. The reader doesn't need to be told where this came from.
+
+REQUIRED — inline links and images:
+
+A. ENTITY LINKS (external): naturally hyperlink the key proper-nouns to their official websites or Wikipedia. Companies → their .com. Cities or landmarks → their Wikipedia page. Government bodies → their official site. Aim for 4-8 such links across the body. Use natural anchor text — don't link the same entity twice. Format: [Lighthouse](https://www.cloudbeds.com/lighthouse/).
+
+B. INTERNAL BACKLINKS: you will be given a list of existing Geo-Traveller posts. When something in the post is topically related to one of those, link it inline using the post's slug, like [as we covered earlier](/posts/SLUG/). Aim for 1-3 internal backlinks per post. Pick relevant ones; don't force fits.
+
+C. INLINE IMAGES: place 2-4 inline images at moments where a visual helps. Use this exact markdown syntax with a special "query:" URL — the build pipeline replaces these with real photos:
+
+   ![Descriptive alt text](query:short search query here)
+
+   Example: ![Hotel front desk at dusk](query:luxury hotel reception)
+
+   Pick short, specific Unsplash-friendly queries (2-5 words). The first one should appear after the opening 1-2 paragraphs, not at the very top.
+
+Output the result via the publish_post tool.`;
 
 const TOOL = {
   name: 'publish_post',
@@ -35,7 +60,7 @@ const TOOL = {
       },
       slug: {
         type: 'string',
-        description: 'URL slug. Lowercase, hyphenated, 4-8 words. No years unless central to the topic.',
+        description: 'URL slug. Lowercase, hyphenated, 4-8 words. No year unless central.',
         pattern: '^[a-z0-9-]+$',
       },
       excerpt: {
@@ -45,7 +70,7 @@ const TOOL = {
       tags: {
         type: 'array',
         items: { type: 'string' },
-        description: 'Free-form tags. Include "Geo Daily" for news pieces. Country/region. Topic (Flight, Festival, Food, Visa, etc.). 3-6 tags.',
+        description: 'Free-form. Include "Geo Daily" for news. Country/region. Topic (Flight, Festival, Food, Visa, etc.). 3-6 tags.',
       },
       locationName: {
         type: 'string',
@@ -53,11 +78,11 @@ const TOOL = {
       },
       body: {
         type: 'string',
-        description: 'Full body in Markdown / MDX. Headings, paragraphs, lists. NO frontmatter, NO title at top (handled separately). Include the source link in a final line: "Source: [Outlet Name](URL)".',
+        description: 'Full body in Markdown / MDX. Headings, paragraphs, lists. NO frontmatter, NO title at top. Must include entity links, internal backlinks, and inline images per the system prompt. NO "Source:" line.',
       },
       coverQuery: {
         type: 'string',
-        description: 'A short query for an Unsplash image search to use as the cover. E.g. "Tokyo skyline at night", "Indian airport terminal", "Bhutan mountains". 2-5 words.',
+        description: 'A short Unsplash search query for the cover photo. Must be SPECIFIC to this story\'s subject — a place, object, person, or scene from the post — not abstract. Bad: "travel"; "technology". Good: "hotel front desk", "Tokyo street at night", "airport terminal sunset".',
       },
     },
     required: ['title', 'slug', 'excerpt', 'tags', 'body', 'coverQuery'],
@@ -76,15 +101,41 @@ export interface GeneratedPost {
   sourceName: string;
 }
 
-export async function generatePost(candidate: Candidate): Promise<GeneratedPost> {
+export async function generatePost(
+  candidate: Candidate,
+  existingPosts: ExistingPost[] = []
+): Promise<GeneratedPost> {
   const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+
+  // Trim to most-relevant 20 by simple keyword overlap, so the prompt doesn't blow up.
+  const topic = (candidate.title + ' ' + candidate.summary).toLowerCase();
+  const ranked = existingPosts
+    .map((p) => {
+      const text = (p.title + ' ' + (p.tags ?? []).join(' ') + ' ' + (p.excerpt ?? '')).toLowerCase();
+      let score = 0;
+      for (const word of topic.split(/\W+/).filter((w) => w.length >= 4)) {
+        if (text.includes(word)) score++;
+      }
+      return { p, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 20)
+    .map((x) => x.p);
+
+  const postList = ranked.length > 0
+    ? ranked.map((p) => `- ${p.title} — slug: ${p.slug}${p.tags?.length ? ' — tags: ' + p.tags.slice(0, 4).join(', ') : ''}`).join('\n')
+    : '(none yet)';
 
   const userPrompt = `Trending news to cover:
 
 Headline: ${candidate.title}
 Source: ${candidate.source}
-URL: ${candidate.url}
+Source URL: ${candidate.url}
 Summary: ${candidate.summary}
+
+Existing Geo-Traveller posts you can backlink to inline when topically relevant (use the slug):
+
+${postList}
 
 Write the Geo-Traveller post. Use the publish_post tool to return the result.`;
 

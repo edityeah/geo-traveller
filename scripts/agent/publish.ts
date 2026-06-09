@@ -42,6 +42,24 @@ function mdToBlocks(md: string): any[] {
     const line = raw.trim();
     if (!line) { flushPara(); continue; }
 
+    // Standalone image line: ![alt](url) — becomes a Notion image block.
+    const imgMatch = line.match(/^!\[([^\]]*)\]\((https?:\/\/[^)]+)\)$/);
+    if (imgMatch) {
+      flushPara();
+      const alt = imgMatch[1] || 'image';
+      const url = imgMatch[2];
+      blocks.push({
+        object: 'block',
+        type: 'image',
+        image: {
+          type: 'external',
+          external: { url },
+          caption: alt && alt !== 'image' ? [{ type: 'text', text: { content: alt } }] : [],
+        },
+      });
+      continue;
+    }
+
     const h1 = line.match(/^#\s+(.*)/);
     const h2 = line.match(/^##\s+(.*)/);
     const h3 = line.match(/^###\s+(.*)/);
