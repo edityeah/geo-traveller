@@ -5,7 +5,14 @@ import Sidebar from '../components/Sidebar.astro';
 import { getAllPosts, postPath, readMinutes, formatDate, tagSlug, type Post } from '../lib/posts';
 
 const posts = await getAllPosts();
-const [featured, ...rest] = posts;
+// The featured slot is for long-form / destination posts only. News items
+// tagged "Geo Daily" are excluded — they cycle through too fast and dilute
+// what the homepage is meant to showcase.
+const featuredEligible = posts.filter(
+  (p) => !(p.data.tags ?? []).some((t) => t.toLowerCase() === 'geo daily' || t.toLowerCase() === 'geo-daily')
+);
+const featured = featuredEligible[0];
+const rest = posts.filter((p) => p.id !== featured?.id);
 const featuredDate = featured ? formatDate(featured.data.publishDate) : '';
 const featuredMins = featured ? readMinutes(featured) : 0;
 
