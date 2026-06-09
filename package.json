@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build:content": "tsx scripts/build-content.ts",
+    "build:content": "tsx --env-file-if-exists=.env scripts/build-content.ts",
     "build:search": "pagefind --site dist",
     "build": "npm run build:content && astro build && npm run build:search",
+    "migrate": "tsx --env-file-if-exists=.env scripts/migrate-wp/migrate.ts",
     "preview": "astro preview",
     "astro": "astro",
     "typecheck": "astro check"
