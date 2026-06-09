@@ -123,13 +123,11 @@ if (jsonLd) {
         </div>
         <nav class="footer-nav">
           <a href="/">Home</a>
-          <a href="/archive/">Archive</a>
           <a href="/map/">Map</a>
           <a href="/gallery/">Gallery</a>
           {footerPages.map((p) => (
             <a href={`/${p.data.slug}/`}>{p.data.title}</a>
           ))}
-          <a href="/rss.xml">RSS</a>
         </nav>
         <div class="footer-social">
           <a href="https://www.instagram.com/thegeotraveller/" rel="me noopener" target="_blank" aria-label="Instagram">Instagram</a>

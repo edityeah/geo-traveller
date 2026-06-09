@@ -125,7 +125,7 @@ figcaption {
 .footer-brand img {
   /* same logic — the cropped PNG fills its container, so shrink the footer
      version too. */
-  height: 2.5rem;
+  height: 4.5rem;
 }
 
 .site-footer {
