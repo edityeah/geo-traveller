@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import Comments from '../../components/Comments.astro';
+import CommentSection from '../../components/CommentSection.astro';
 import LegacyComments from '../../components/LegacyComments.astro';
 import Sidebar from '../../components/Sidebar.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
@@ -111,7 +111,7 @@ const ld = [
       <AuthorBio />
       <RelatedPosts current={post} />
       <LegacyComments originalUrl={post.data.originalUrl} />
-      <Comments />
+      <CommentSection slug={slug} />
     </div>
     <Sidebar currentSlug={slug} />
   </article>

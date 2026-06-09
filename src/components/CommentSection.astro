@@ -1,0 +1,282 @@
+---
+interface Props {
+  slug: string;
+}
+const { slug } = Astro.props;
+---
+
+<section class="comment-section" id="comments">
+  <h2>Comments</h2>
+  <p class="comment-intro">Have a thought, a question, or a memory to add? Leave a comment — no account needed.</p>
+
+  <form class="comment-form" data-slug={slug}>
+    <label class="field">
+      <span>Your name</span>
+      <input name="name" type="text" required maxlength="60" autocomplete="name" />
+    </label>
+    <label class="field">
+      <span>Email <small>(optional, never shown)</small></span>
+      <input name="email" type="email" maxlength="120" autocomplete="email" />
+    </label>
+    <label class="field">
+      <span>Comment</span>
+      <textarea name="body" required maxlength="2000" rows="4" placeholder="Share your thoughts..."></textarea>
+    </label>
+    <!-- Honeypot field, visually hidden -->
+    <label class="hp-field" aria-hidden="true" tabindex="-1">
+      Leave this empty
+      <input name="hp" type="text" autocomplete="off" tabindex="-1" />
+    </label>
+    <div class="form-row">
+      <button type="submit" class="submit">Post comment</button>
+      <span class="form-status" aria-live="polite"></span>
+    </div>
+  </form>
+
+  <ol class="comment-list" data-slug={slug}>
+    <li class="loading">Loading comments…</li>
+  </ol>
+</section>
+
+<script>
+  type Comment = { id: string; name: string; body: string; date: string };
+
+  function escapeHtml(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function formatDate(iso: string): string {
+    try {
+      return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    } catch {
+      return iso.slice(0, 10);
+    }
+  }
+
+  function renderList(list: HTMLOListElement, comments: Comment[]) {
+    if (!comments.length) {
+      list.innerHTML = '<li class="empty">No comments yet — be the first.</li>';
+      return;
+    }
+    list.innerHTML = comments
+      .slice()
+      .reverse() // newest first
+      .map(
+        (c) => `
+        <li class="comment-item">
+          <div class="comment-meta">
+            <span class="comment-name">${escapeHtml(c.name)}</span>
+            <span class="comment-dot">·</span>
+            <span class="comment-date">${formatDate(c.date)}</span>
+          </div>
+          <p class="comment-body">${escapeHtml(c.body)}</p>
+        </li>`
+      )
+      .join('');
+  }
+
+  async function load(slug: string, list: HTMLOListElement) {
+    try {
+      const r = await fetch(`/api/comments/${encodeURIComponent(slug)}`);
+      if (!r.ok) {
+        list.innerHTML = '<li class="empty">Couldn\'t load comments. Try refreshing.</li>';
+        return;
+      }
+      const d = (await r.json()) as { comments: Comment[] };
+      renderList(list, d.comments || []);
+    } catch {
+      list.innerHTML = '<li class="empty">Couldn\'t load comments. Try refreshing.</li>';
+    }
+  }
+
+  document.querySelectorAll<HTMLFormElement>('.comment-form').forEach((form) => {
+    const slug = form.dataset.slug;
+    if (!slug) return;
+    const list = document.querySelector<HTMLOListElement>(`.comment-list[data-slug="${CSS.escape(slug)}"]`);
+    if (!list) return;
+    const status = form.querySelector<HTMLSpanElement>('.form-status');
+    const submit = form.querySelector<HTMLButtonElement>('button.submit');
+
+    load(slug, list);
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!submit || !status) return;
+      const fd = new FormData(form);
+      const body = {
+        name: String(fd.get('name') ?? ''),
+        email: String(fd.get('email') ?? ''),
+        body: String(fd.get('body') ?? ''),
+        hp: String(fd.get('hp') ?? ''),
+      };
+      submit.disabled = true;
+      status.textContent = 'Posting…';
+      status.className = 'form-status';
+      try {
+        const r = await fetch(`/api/comments/${encodeURIComponent(slug)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const d = await r.json();
+        if (!r.ok) {
+          status.textContent = d?.error ?? 'Could not post.';
+          status.className = 'form-status error';
+          submit.disabled = false;
+          return;
+        }
+        status.textContent = 'Posted! Thanks for joining the conversation.';
+        status.className = 'form-status ok';
+        form.reset();
+        await load(slug, list);
+      } catch (err) {
+        status.textContent = 'Network error. Try again.';
+        status.className = 'form-status error';
+      } finally {
+        submit.disabled = false;
+      }
+    });
+  });
+</script>
+
+<style>
+  .comment-section {
+    max-width: var(--measure);
+    margin: 4rem auto 0;
+    padding-top: 2rem;
+    border-top: 1px solid var(--rule);
+  }
+  .comment-section h2 {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+  }
+  .comment-intro {
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0 0 1.5rem;
+  }
+  .comment-form {
+    background: var(--bg-warm);
+    border-radius: 4px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    font-family: var(--font-sans);
+    display: grid;
+    gap: 1rem;
+  }
+  .field {
+    display: grid;
+    gap: 0.4rem;
+  }
+  .field > span {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--fg-soft);
+  }
+  .field > span small {
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .field input,
+  .field textarea {
+    padding: 0.6rem 0.85rem;
+    border: 1px solid var(--rule-strong);
+    border-radius: 4px;
+    background: var(--bg-elev);
+    color: var(--fg);
+    font: inherit;
+    font-size: 0.95rem;
+    font-family: var(--font-sans);
+  }
+  .field textarea {
+    resize: vertical;
+    min-height: 6rem;
+    line-height: 1.5;
+  }
+  .field input:focus,
+  .field textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .hp-field {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .form-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .submit {
+    padding: 0.65rem 1.4rem;
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    border-radius: 999px;
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .submit:hover:not(:disabled) { background: var(--accent-deep); }
+  .submit:disabled { opacity: 0.6; cursor: not-allowed; }
+  .form-status {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .form-status.ok { color: var(--accent); }
+  .form-status.error { color: #b03c2a; }
+
+  .comment-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 1rem;
+  }
+  .comment-list .loading,
+  .comment-list .empty {
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    color: var(--muted);
+    font-style: italic;
+    padding: 0.5rem 0;
+  }
+  .comment-item {
+    padding: 1rem 1.25rem;
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+  }
+  .comment-meta {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .comment-name {
+    color: var(--fg);
+    font-weight: 600;
+  }
+  .comment-body {
+    margin: 0;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    color: var(--fg-soft);
+  }
+</style>
