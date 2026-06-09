@@ -95,7 +95,7 @@ jobs:
               continue
             fi
             CT=$(file --mime-type -b "$f")
-            npx wrangler r2 object put "${BUCKET}/${KEY}" --file "$f" --content-type "$CT" >/dev/null 2>&1 \
+            npx wrangler r2 object put "${BUCKET}/${KEY}" --file "$f" --content-type "$CT" --remote >/dev/null 2>&1 \
               && UPLOADED=$((UPLOADED+1)) \
               || echo "FAIL: $KEY"
           done < <(find . -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.gif' -o -iname '*.webp' -o -iname '*.avif' -o -iname '*.svg' \))

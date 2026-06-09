@@ -124,6 +124,10 @@ async function uploadToR2(key: string, buf: Buffer, contentType: string): Promis
       tmp,
       '--content-type',
       contentType,
+      // wrangler v4 defaults R2 commands to a LOCAL sandbox. Without
+      // --remote, "successful" puts vanish at process exit. Took half
+      // a debugging cycle to figure out.
+      '--remote',
     ];
     const child = spawn('npx', args, {
       stdio: ['ignore', 'ignore', 'pipe'],
