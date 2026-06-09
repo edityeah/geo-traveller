@@ -1,0 +1,110 @@
+---
+import { getAllPosts, postPath, type Post, readMinutes } from '../lib/posts';
+
+interface Props {
+  current: Post;
+  count?: number;
+}
+const { current, count = 3 } = Astro.props;
+
+const currentTags = new Set((current.data.tags ?? []).map((t) => t.toLowerCase()));
+const all = await getAllPosts();
+const candidates = all
+  .filter((p) => p.id !== current.id)
+  .map((p) => {
+    const tagOverlap = (p.data.tags ?? []).reduce(
+      (n, t) => (currentTags.has(t.toLowerCase()) ? n + 1 : n),
+      0
+    );
+    return { post: p, score: tagOverlap };
+  })
+  .filter((c) => c.score > 0)
+  .sort((a, b) => b.score - a.score || b.post.data.publishDate.getTime() - a.post.data.publishDate.getTime())
+  .slice(0, count);
+
+// Fall back to latest posts if no tag overlap.
+const related = candidates.length > 0
+  ? candidates.map((c) => c.post)
+  : all.filter((p) => p.id !== current.id).slice(0, count);
+---
+
+{related.length > 0 && (
+  <section class="related-posts">
+    <h2 class="related-heading">More stories like this</h2>
+    <ul class="related-list">
+      {related.map((post) => (
+        <li>
+          <a href={postPath(post)}>
+            {post.data.cover && (
+              <div class="related-thumb"><img src={post.data.cover} alt="" loading="lazy" /></div>
+            )}
+            <div class="related-text">
+              <h3>{post.data.title}</h3>
+              <span class="related-meta">{readMinutes(post)} min read{post.data.locationName ? ` · ${post.data.locationName}` : ''}</span>
+            </div>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
+
+<style>
+  .related-posts {
+    max-width: var(--measure);
+    margin: 4rem auto 0;
+    padding-top: 2rem;
+    border-top: 1px solid var(--rule);
+  }
+  .related-heading {
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 1.5rem;
+  }
+  .related-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 1.25rem;
+  }
+  .related-list a {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr;
+    gap: 1rem;
+    text-decoration: none;
+    color: inherit;
+    align-items: center;
+  }
+  .related-thumb {
+    width: 5.5rem;
+    height: 5.5rem;
+    overflow: hidden;
+    background: var(--rule);
+    border-radius: 4px;
+  }
+  .related-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .related-text h3 {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 0 0 0.25rem;
+    color: var(--fg);
+    transition: color 0.15s ease;
+  }
+  .related-list a:hover h3 { color: var(--accent); }
+  .related-meta {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+</style>

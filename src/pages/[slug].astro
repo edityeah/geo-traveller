@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import Sidebar from '../components/Sidebar.astro';
 import { getCollection, render } from 'astro:content';
+import { personLd, breadcrumbLd } from '../lib/seo';
 
 export async function getStaticPaths() {
   const pages = await getCollection('pages');
@@ -13,9 +14,19 @@ export async function getStaticPaths() {
 
 const { page } = Astro.props;
 const { Content } = await render(page);
+
+// On the About page, attach Person schema so search engines + LLMs attribute authorship
+// across the site to a real, identifiable human (E-E-A-T signal).
+const ld: Record<string, unknown>[] = [
+  breadcrumbLd([
+    { name: 'Home', url: '/' },
+    { name: page.data.title, url: `/${page.data.slug}/` },
+  ]),
+];
+if (page.data.slug === 'about') ld.push(personLd());
 ---
 
-<Base title={page.data.title} description={page.data.description}>
+<Base title={page.data.title} description={page.data.description} jsonLd={ld}>
   <article class="with-sidebar">
     <div class="main-col">
       <header style="text-align: center; padding: 1.5rem 0 2.5rem; max-width: var(--measure); margin: 0 auto;">
