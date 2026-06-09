@@ -1,6 +1,5 @@
 name: R2 list (debug)
 
-# One-shot: dump first 30 object keys from the bucket.
 on:
   workflow_dispatch: {}
 
@@ -8,13 +7,32 @@ jobs:
   list:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
-      - name: Install wrangler
-        run: npm install --no-save wrangler@4
-      - env:
+      - name: Install wrangler + aws cli
+        run: |
+          npm install --no-save wrangler@4
+          sudo apt-get update && sudo apt-get install -y awscli
+      - name: Try to GET a known key
+        env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          echo "=== First 30 object keys ==="
-          npx wrangler r2 object list geo-traveller-images 2>&1 | head -60
+          KEY="exploring-the-culinary-tradition-of-ajmer-sharif-dargah-chef-vikas-khannas-4800-/86b50c8153e0499f.png"
+          echo "=== wrangler r2 object get ==="
+          npx wrangler r2 object get "geo-traveller-images/${KEY}" --file /tmp/got.png 2>&1 | tail -20
+          ls -la /tmp/got.png 2>/dev/null || echo "NOT GOT"
+          file /tmp/got.png 2>/dev/null
+      - name: Bucket usage via API
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          echo "=== Bucket details ==="
+          curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/geo-traveller-images/usage" | head -c 800
+          echo
+          echo "=== Domains ==="
+          curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/geo-traveller-images/domains/custom" | head -c 800
