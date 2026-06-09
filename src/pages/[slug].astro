@@ -1,0 +1,33 @@
+---
+import Base from '../layouts/Base.astro';
+import Sidebar from '../components/Sidebar.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const pages = await getCollection('pages');
+  return pages.map((page) => ({
+    params: { slug: page.data.slug },
+    props: { page },
+  }));
+}
+
+const { page } = Astro.props;
+const { Content } = await render(page);
+---
+
+<Base title={page.data.title} description={page.data.description}>
+  <article class="with-sidebar">
+    <div class="main-col">
+      <header style="text-align: center; padding: 1.5rem 0 2.5rem; max-width: var(--measure); margin: 0 auto;">
+        <h1 class="page-title">{page.data.title}</h1>
+        {page.data.description && (
+          <p style="color: var(--muted); font-style: italic; margin: 0.5rem 0 0;">{page.data.description}</p>
+        )}
+      </header>
+      <div class="post-body" style="max-width: var(--measure); margin: 0 auto;">
+        <Content />
+      </div>
+    </div>
+    <Sidebar />
+  </article>
+</Base>

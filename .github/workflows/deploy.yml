@@ -37,6 +37,7 @@ jobs:
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          NOTION_PAGES_DATABASE_ID: ${{ secrets.NOTION_PAGES_DATABASE_ID }}
         run: npm run build
 
       - name: Deploy to Cloudflare Pages
