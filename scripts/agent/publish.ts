@@ -97,6 +97,19 @@ function mdToBlocks(md: string): any[] {
   return blocks;
 }
 
+const SITE_URL = 'https://geo-traveller.com';
+
+function normalizeLinkUrl(url: string): string | null {
+  const u = url.trim();
+  if (!u) return null;
+  // Internal: /posts/slug or /tags/x — make absolute (Notion needs http(s)).
+  if (u.startsWith('/')) return SITE_URL + u;
+  // Mailto / tel / http(s) are fine.
+  if (/^(https?:|mailto:|tel:)/i.test(u)) return u;
+  // Anything else (hash-only, plain text, javascript:, ftp:) — drop the link.
+  return null;
+}
+
 function parseInline(text: string): any[] {
   // Handles [link](url), **bold**, *italic*. Simple lex.
   const out: any[] = [];
@@ -108,10 +121,13 @@ function parseInline(text: string): any[] {
       out.push({ type: 'text', text: { content: text.slice(last, m.index) } });
     }
     if (m[2]) {
-      out.push({
-        type: 'text',
-        text: { content: m[1], link: { url: m[2] } },
-      });
+      const url = normalizeLinkUrl(m[2]);
+      if (url) {
+        out.push({ type: 'text', text: { content: m[1], link: { url } } });
+      } else {
+        // Drop the link, keep the anchor text
+        out.push({ type: 'text', text: { content: m[1] } });
+      }
     } else if (m[3]) {
       out.push({
         type: 'text',
