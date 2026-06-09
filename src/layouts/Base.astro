@@ -28,6 +28,8 @@ const buttondownUser = import.meta.env.PUBLIC_BUTTONDOWN_USER;
     <title>{pageTitle}</title>
     <meta name="description" content={siteDescription} />
     <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/img/brand/logo-square.png" />
     <link rel="alternate" type="application/rss+xml" title={siteTitle} href="/rss.xml" />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={siteDescription} />
@@ -39,28 +41,39 @@ const buttondownUser = import.meta.env.PUBLIC_BUTTONDOWN_USER;
   </head>
   <body>
     <header class="site-header">
-      <a href="/" class="brand">Geo-Traveller</a>
+      <a href="/" class="brand" aria-label="Geo-Traveller — home">
+        <img src="/img/brand/logo.png" alt="The Geo-Traveller" />
+      </a>
       <SiteNav />
     </header>
     <main>
       <slot />
     </main>
     <footer class="site-footer">
-      {buttondownUser && (
-        <form
-          action={`https://buttondown.email/api/emails/embed-subscribe/${buttondownUser}`}
-          method="post"
-          target="_blank"
-          class="newsletter"
-        >
-          <label for="bd-email">Get new posts by email</label>
-          <input id="bd-email" type="email" name="email" placeholder="you@example.com" required />
-          <button type="submit">Subscribe</button>
-        </form>
-      )}
-      <p>
-        &copy; {new Date().getFullYear()} Geo-Traveller · <a href="/rss.xml">RSS</a> · Built with Astro + Notion
-      </p>
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <a href="/"><img src="/img/brand/logo.png" alt="The Geo-Traveller" /></a>
+          <p class="footer-tag">A travel journal. India and beyond.</p>
+        </div>
+        <nav class="footer-nav">
+          <a href="/">Home</a>
+          <a href="/about/">About</a>
+          <a href="/archive/">Archive</a>
+          <a href="/map/">Map</a>
+          <a href="/gallery/">Gallery</a>
+          <a href="/privacy/">Privacy</a>
+          <a href="/contact/">Contact</a>
+          <a href="/rss.xml">RSS</a>
+        </nav>
+        <div class="footer-social">
+          <a href="https://www.instagram.com/thegeotraveller/" rel="me noopener" target="_blank" aria-label="Instagram">Instagram</a>
+          <a href="https://www.linkedin.com/in/adityacbcc/" rel="me noopener" target="_blank" aria-label="LinkedIn">LinkedIn</a>
+          <a href="http://facebook.com/thegeotraveller" rel="me noopener" target="_blank" aria-label="Facebook">Facebook</a>
+        </div>
+        <p class="footer-copy">
+          &copy; {new Date().getFullYear()} The Geo-Traveller · India · All rights reserved
+        </p>
+      </div>
     </footer>
     {cfaToken && (
       <script

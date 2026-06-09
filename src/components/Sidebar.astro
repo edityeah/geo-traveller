@@ -1,0 +1,240 @@
+---
+import { getAllPosts, postPath, formatDateShort } from '../lib/posts';
+
+// "Trending" — show 5 most recent published posts (excluding the current post if passed).
+interface Props {
+  currentSlug?: string;
+}
+const { currentSlug } = Astro.props;
+const all = await getAllPosts();
+const trending = all
+  .filter((p) => p.data.slug !== currentSlug)
+  .slice(0, 5);
+
+const buttondownUser = import.meta.env.PUBLIC_BUTTONDOWN_USER;
+---
+
+<aside class="sidebar">
+  <section class="sb-block sb-about">
+    <h3 class="sb-title">About</h3>
+    <div class="sb-about-body">
+      <p>
+        Hello! I am <strong>Aditya</strong> all the way from India. I began
+        with short stories, travels, and other itsy bitsy works on this blog
+        and eventually funneled down to the niches I write best about —
+        travel and writing.
+      </p>
+      <p class="sb-about-cta">
+        <a href="/about/">More about me →</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="sb-block sb-connect">
+    <h3 class="sb-title">Connect &amp; Follow</h3>
+    <ul class="sb-socials">
+      <li>
+        <a href="https://www.instagram.com/thegeotraveller/" rel="me noopener" target="_blank">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23a3.72 3.72 0 01-.9 1.38c-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.72 3.72 0 01-1.38-.9 3.72 3.72 0 01-.9-1.38c-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16M12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.34 4.14.63a5.88 5.88 0 00-2.13 1.38A5.88 5.88 0 00.63 4.14C.34 4.9.13 5.78.07 7.05.01 8.33 0 8.74 0 12c0 3.26.01 3.67.07 4.95.06 1.27.27 2.15.56 2.91.31.8.72 1.48 1.38 2.13.65.66 1.33 1.07 2.13 1.38.76.29 1.64.5 2.91.56C8.33 23.99 8.74 24 12 24c3.26 0 3.67-.01 4.95-.07 1.27-.06 2.15-.27 2.91-.56.8-.31 1.48-.72 2.13-1.38.66-.65 1.07-1.33 1.38-2.13.29-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95 0-3.26-.01-3.67-.07-4.95-.06-1.27-.27-2.15-.56-2.91A5.88 5.88 0 0021.99 2 5.88 5.88 0 0019.86.63C19.1.34 18.22.13 16.95.07 15.67.01 15.26 0 12 0zm0 5.84A6.16 6.16 0 1018.16 12 6.16 6.16 0 0012 5.84zm0 10.16A4 4 0 1116 12a4 4 0 01-4 4zm6.4-11.85a1.44 1.44 0 11-1.44-1.44 1.44 1.44 0 011.44 1.44z"/></svg>
+          <span>Instagram</span>
+        </a>
+      </li>
+      <li>
+        <a href="https://www.linkedin.com/in/adityacbcc/" rel="me noopener" target="_blank">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 0H5a5 5 0 00-5 5v14a5 5 0 005 5h14a5 5 0 005-5V5a5 5 0 00-5-5zM8 19H5V8h3v11zM6.5 6.73a1.77 1.77 0 110-3.54 1.77 1.77 0 010 3.54zM20 19h-3v-5.6c0-3.37-4-3.11-4 0V19h-3V8h3v1.77c1.4-2.59 7-2.78 7 2.48V19z"/></svg>
+          <span>LinkedIn</span>
+        </a>
+      </li>
+      <li>
+        <a href="http://facebook.com/thegeotraveller" rel="me noopener" target="_blank">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M24 12.07C24 5.41 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.7 4.54-4.7 1.31 0 2.69.24 2.69.24v2.97h-1.51c-1.5 0-1.96.93-1.96 1.89v2.27h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07z"/></svg>
+          <span>Facebook</span>
+        </a>
+      </li>
+    </ul>
+  </section>
+
+  {buttondownUser && (
+    <section class="sb-block sb-newsletter">
+      <h3 class="sb-title">Sign up for stories every week!</h3>
+      <p class="sb-newsletter-body">
+        These aren't automated. I <em>write</em> these emails — and you get my free travel checklist when you subscribe.
+      </p>
+      <form
+        action={`https://buttondown.email/api/emails/embed-subscribe/${buttondownUser}`}
+        method="post"
+        target="_blank"
+        class="sb-newsletter-form"
+      >
+        <input type="text" name="first_name" placeholder="First name" required />
+        <input type="email" name="email" placeholder="you@example.com" required />
+        <button type="submit">Join the tribe</button>
+      </form>
+    </section>
+  )}
+
+  <section class="sb-block sb-trending">
+    <h3 class="sb-title">Trending</h3>
+    <ul class="sb-trending-list">
+      {trending.map((post) => (
+        <li>
+          <a href={postPath(post)}>
+            {post.data.cover && (
+              <div class="sb-trending-thumb"><img src={post.data.cover} alt="" loading="lazy" /></div>
+            )}
+            <div class="sb-trending-text">
+              <h4>{post.data.title}</h4>
+              <span class="sb-trending-date">{formatDateShort(post.data.publishDate)}</span>
+            </div>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+</aside>
+
+<style>
+  .sidebar {
+    font-family: var(--font-sans);
+  }
+  .sb-block {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .sb-block:last-child {
+    border-bottom: none;
+  }
+  .sb-title {
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin: 0 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--fg);
+  }
+
+  .sb-about-body {
+    font-size: 0.9rem;
+    color: var(--fg-soft);
+    line-height: 1.55;
+  }
+  .sb-about-body p { margin: 0 0 0.75rem; }
+  .sb-about-cta a {
+    color: var(--accent);
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .sb-about-cta a:hover { color: var(--accent-deep); }
+
+  .sb-socials {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .sb-socials a {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.5rem 0.6rem;
+    color: var(--fg-soft);
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .sb-socials a:hover {
+    background: var(--bg-warm);
+    color: var(--accent);
+  }
+  .sb-socials svg { flex-shrink: 0; }
+
+  .sb-newsletter-body {
+    font-size: 0.85rem;
+    color: var(--fg-soft);
+    line-height: 1.5;
+    margin: 0 0 1rem;
+  }
+  .sb-newsletter-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .sb-newsletter-form input {
+    padding: 0.55rem 0.85rem;
+    border: 1px solid var(--rule-strong);
+    border-radius: 999px;
+    background: var(--bg-warm);
+    color: var(--fg);
+    font: inherit;
+    font-size: 0.875rem;
+  }
+  .sb-newsletter-form input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .sb-newsletter-form button {
+    padding: 0.6rem 1rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .sb-newsletter-form button:hover { background: var(--accent-deep); }
+
+  .sb-trending-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .sb-trending-list a {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: inherit;
+    align-items: center;
+  }
+  .sb-trending-thumb {
+    width: 4.5rem;
+    height: 4.5rem;
+    overflow: hidden;
+    background: var(--rule);
+    border-radius: 4px;
+  }
+  .sb-trending-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .sb-trending-text h4 {
+    font-family: var(--font-serif);
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1.25;
+    margin: 0 0 0.25rem;
+    color: var(--fg);
+    transition: color 0.15s ease;
+  }
+  .sb-trending-list a:hover h4 { color: var(--accent); }
+  .sb-trending-date {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+</style>

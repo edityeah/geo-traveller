@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Comments from '../../components/Comments.astro';
+import Sidebar from '../../components/Sidebar.astro';
 import { getAllPosts, postSlug, tagSlug, readMinutes, formatDate } from '../../lib/posts';
 import { render } from 'astro:content';
 
@@ -24,36 +25,39 @@ const mins = readMinutes(post);
   ogImage={post.data.cover}
   publishedTime={post.data.originalDate ?? post.data.publishDate}
 >
-  <article>
-    <header class="post-header">
-      <div class="kicker">
-        {date}
-        {post.data.locationName && ` · ${post.data.locationName}`}
-        {` · ${mins} min read`}
-      </div>
-      <h1>{post.data.title}</h1>
-      {post.data.excerpt && <p class="lede">{post.data.excerpt}</p>}
-    </header>
+  <article class="post-page-layout">
+    <div class="post-main">
+      <header class="post-header">
+        <div class="kicker">
+          {date}
+          {post.data.locationName && ` · ${post.data.locationName}`}
+          {` · ${mins} min read`}
+        </div>
+        <h1>{post.data.title}</h1>
+        {post.data.excerpt && <p class="lede">{post.data.excerpt}</p>}
+      </header>
 
-    {post.data.cover && (
-      <div class="post-cover">
-        <img src={post.data.cover} alt={post.data.title} />
-      </div>
-    )}
+      {post.data.cover && (
+        <div class="post-cover">
+          <img src={post.data.cover} alt={post.data.title} />
+        </div>
+      )}
 
-    <div class="post-body" data-pagefind-body>
-      <Content />
+      <div class="post-body" data-pagefind-body>
+        <Content />
+      </div>
+
+      {post.data.tags && post.data.tags.length > 0 && (
+        <footer class="post-footer">
+          <span>Filed under:</span>
+          {post.data.tags.map((t) => (
+            <a class="tag" href={`/tags/${tagSlug(t)}/`}>{t}</a>
+          ))}
+        </footer>
+      )}
+
+      <Comments />
     </div>
-
-    {post.data.tags && post.data.tags.length > 0 && (
-      <footer class="post-footer">
-        <span>Filed under:</span>
-        {post.data.tags.map((t) => (
-          <a class="tag" href={`/tags/${tagSlug(t)}/`}>{t}</a>
-        ))}
-      </footer>
-    )}
-
-    <Comments />
+    <Sidebar currentSlug={postSlug(post)} />
   </article>
 </Base>
