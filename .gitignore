@@ -6,7 +6,9 @@ dist
 
 # Notion-sourced posts (rebuilt every deploy)
 src/content/posts/notion/
-public/img/generated/
+# public/img/generated/ is committed so GitHub Actions builds don't have to
+# re-fetch every image from the old WordPress URLs (which stopped resolving
+# after DNS cutover to Cloudflare Pages).
 
 # OS
 .DS_Store

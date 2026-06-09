@@ -94,7 +94,7 @@ figcaption {
 /* Site chrome */
 .site-header {
   border-bottom: 1px solid var(--rule);
-  padding: 0.5rem 1.5rem;
+  padding: 0.4rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -111,12 +111,17 @@ figcaption {
   white-space: nowrap;
 }
 .site-header .brand img {
-  height: 6.5rem;
+  height: 4rem;
   width: auto;
   display: block;
 }
 @media (max-width: 720px) {
-  .site-header .brand img { height: 3.5rem; }
+  .site-header .brand img { height: 2.75rem; }
+}
+.footer-brand img {
+  /* same logic — the cropped PNG fills its container, so shrink the footer
+     version too. */
+  height: 2.5rem;
 }
 
 .site-footer {
