@@ -120,7 +120,7 @@ function renderItemId(label: string): string {
   .nav-dropdown,
   .nav-subdropdown {
     position: absolute;
-    top: calc(100% + 0.4rem);
+    top: calc(100% + 0.5rem);
     left: 0;
     min-width: 12rem;
     background: var(--bg-elev);
@@ -131,9 +131,25 @@ function renderItemId(label: string): string {
     display: none;
     z-index: 50;
   }
+  /* Invisible hover-bridge so moving cursor from nav item to dropdown
+     doesn't pass through a dead zone that drops the hover state. */
+  .nav-dropdown::before,
+  .nav-subdropdown::before {
+    content: '';
+    position: absolute;
+    top: -0.6rem;
+    left: 0;
+    right: 0;
+    height: 0.6rem;
+  }
   .nav-group:hover > .nav-dropdown,
   .nav-group:focus-within > .nav-dropdown {
     display: block;
+  }
+  /* Right-align the rightmost dropdown so it doesn't overflow off-screen. */
+  .nav-group:last-child > .nav-dropdown {
+    left: auto;
+    right: 0;
   }
 
   .nav-dropdown a,
