@@ -1,12 +1,40 @@
 ---
 import Base from '../layouts/Base.astro';
 import PostCard from '../components/PostCard.astro';
-import { getAllPosts, postPath, readMinutes, formatDate } from '../lib/posts';
+import { getAllPosts, postPath, readMinutes, formatDate, tagSlug, type Post } from '../lib/posts';
 
 const posts = await getAllPosts();
 const [featured, ...rest] = posts;
 const featuredDate = featured ? formatDate(featured.data.publishDate) : '';
 const featuredMins = featured ? readMinutes(featured) : 0;
+
+// Build category sections. Each is a tag name that surfaces as a section.
+// Order matters — top = most prominent.
+const CATEGORY_ORDER: { label: string; tag: string }[] = [
+  { label: 'Geo Daily', tag: 'Geo Daily' },
+  { label: 'India', tag: 'India' },
+  { label: 'Bhutan', tag: 'Bhutan' },
+  { label: 'Himachal Pradesh', tag: 'Himachal Pradesh' },
+  { label: 'Festivals', tag: 'Festival' },
+  { label: 'Flight', tag: 'Flight' },
+];
+
+function bySection(tagName: string, n: number): Post[] {
+  const lower = tagName.toLowerCase();
+  return rest
+    .filter((p) =>
+      (p.data.tags ?? []).some((t) => t.toLowerCase() === lower)
+    )
+    .slice(0, n);
+}
+
+const sections = CATEGORY_ORDER
+  .map((c) => ({ ...c, posts: bySection(c.tag, 3) }))
+  .filter((s) => s.posts.length > 0);
+
+// Posts not surfaced in any section yet — show in a "Latest" catchall at the end.
+const surfacedIds = new Set(sections.flatMap((s) => s.posts.map((p) => p.id)));
+const everythingElse = rest.filter((p) => !surfacedIds.has(p.id)).slice(0, 9);
 ---
 
 <Base>
@@ -35,9 +63,27 @@ const featuredMins = featured ? readMinutes(featured) : 0;
     </a>
   )}
 
-  {rest.length > 0 && (
-    <section class="post-grid">
-      {rest.map((post) => <PostCard post={post} />)}
+  {sections.map((sec) => (
+    <section class="section">
+      <header class="section-heading">
+        <h2>{sec.label}</h2>
+        <a class="see-all" href={`/tags/${tagSlug(sec.tag)}/`}>See all →</a>
+      </header>
+      <div class="post-grid three-up">
+        {sec.posts.map((post) => <PostCard post={post} />)}
+      </div>
+    </section>
+  ))}
+
+  {everythingElse.length > 0 && (
+    <section class="section">
+      <header class="section-heading">
+        <h2>More from the archive</h2>
+        <a class="see-all" href="/archive/">Full archive →</a>
+      </header>
+      <div class="post-grid three-up">
+        {everythingElse.map((post) => <PostCard post={post} />)}
+      </div>
     </section>
   )}
 </Base>
