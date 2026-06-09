@@ -240,7 +240,9 @@ async function processPage(page: PageObjectResponse, report: string[]): Promise<
 
 async function main() {
   const report: string[] = [];
-  console.log('Fetching Archived posts...');
+  // Optional CLI args: list of slugs to limit cleanup to. Empty = all posts.
+  const onlySlugs = new Set(process.argv.slice(2));
+  console.log(`Fetching posts (${onlySlugs.size > 0 ? `filtering to ${onlySlugs.size} slugs` : 'all'})...`);
   const pages: PageObjectResponse[] = [];
   let cursor: string | undefined;
   do {
@@ -249,10 +251,16 @@ async function main() {
         database_id: NOTION_DATABASE_ID,
         start_cursor: cursor,
         page_size: 100,
-        filter: { property: 'Status', select: { equals: 'Archived' } },
       })
     );
-    for (const p of res.results) if (isFullPage(p)) pages.push(p);
+    for (const p of res.results) {
+      if (!isFullPage(p)) continue;
+      if (onlySlugs.size > 0) {
+        const slug = (p.properties as any).Slug?.rich_text?.[0]?.plain_text;
+        if (!slug || !onlySlugs.has(slug)) continue;
+      }
+      pages.push(p);
+    }
     cursor = res.has_more ? (res.next_cursor ?? undefined) : undefined;
   } while (cursor);
   console.log(`${pages.length} pages to scan`);

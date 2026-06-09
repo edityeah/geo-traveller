@@ -1,8 +1,41 @@
 ---
+import legacyData from '../data/wp-comments.json';
+
 interface Props {
   slug: string;
+  /** The post's old WordPress URL — used to look up archival comments. */
+  originalUrl?: string;
 }
-const { slug } = Astro.props;
+const { slug, originalUrl } = Astro.props;
+
+type LegacyComment = {
+  id: string;
+  author: string;
+  authorUrl?: string;
+  date: string;
+  content: string;
+  parentId?: string;
+};
+
+// Look up archival comments by the post's original WP URL.
+function lookupLegacy(url?: string): LegacyComment[] {
+  if (!url) return [];
+  const all = legacyData as Record<string, LegacyComment[]>;
+  if (all[url]) return all[url];
+  const noSlash = url.replace(/\/$/, '');
+  if (all[noSlash]) return all[noSlash];
+  const httpsToHttp = url.replace('https://', 'http://');
+  if (all[httpsToHttp]) return all[httpsToHttp];
+  return [];
+}
+
+const legacy = lookupLegacy(originalUrl).map((c) => ({
+  id: `legacy:${c.id}`,
+  name: c.author,
+  body: c.content,
+  date: c.date.replace(' ', 'T') + 'Z',
+}));
+const legacyJson = JSON.stringify(legacy);
 ---
 
 <section class="comment-section" id="comments">
@@ -22,7 +55,6 @@ const { slug } = Astro.props;
       <span>Comment</span>
       <textarea name="body" required maxlength="2000" rows="4" placeholder="Share your thoughts..."></textarea>
     </label>
-    <!-- Honeypot field, visually hidden -->
     <label class="hp-field" aria-hidden="true" tabindex="-1">
       Leave this empty
       <input name="hp" type="text" autocomplete="off" tabindex="-1" />
@@ -33,7 +65,7 @@ const { slug } = Astro.props;
     </div>
   </form>
 
-  <ol class="comment-list" data-slug={slug}>
+  <ol class="comment-list" data-slug={slug} data-legacy={legacyJson}>
     <li class="loading">Loading comments…</li>
   </ol>
 </section>
@@ -42,20 +74,11 @@ const { slug } = Astro.props;
   type Comment = { id: string; name: string; body: string; date: string };
 
   function escapeHtml(s: string): string {
-    return s
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
-
   function formatDate(iso: string): string {
-    try {
-      return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    } catch {
-      return iso.slice(0, 10);
-    }
+    try { return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }); }
+    catch { return iso.slice(0, 10); }
   }
 
   function renderList(list: HTMLOListElement, comments: Comment[]) {
@@ -65,9 +88,8 @@ const { slug } = Astro.props;
     }
     list.innerHTML = comments
       .slice()
-      .reverse() // newest first
-      .map(
-        (c) => `
+      .sort((a, b) => b.date.localeCompare(a.date)) // newest first
+      .map((c) => `
         <li class="comment-item">
           <div class="comment-meta">
             <span class="comment-name">${escapeHtml(c.name)}</span>
@@ -75,22 +97,17 @@ const { slug } = Astro.props;
             <span class="comment-date">${formatDate(c.date)}</span>
           </div>
           <p class="comment-body">${escapeHtml(c.body)}</p>
-        </li>`
-      )
+        </li>`)
       .join('');
   }
 
-  async function load(slug: string, list: HTMLOListElement) {
+  async function load(slug: string, list: HTMLOListElement, legacy: Comment[]) {
     try {
       const r = await fetch(`/api/comments/${encodeURIComponent(slug)}`);
-      if (!r.ok) {
-        list.innerHTML = '<li class="empty">Couldn\'t load comments. Try refreshing.</li>';
-        return;
-      }
-      const d = (await r.json()) as { comments: Comment[] };
-      renderList(list, d.comments || []);
+      const fresh = r.ok ? ((await r.json()) as { comments: Comment[] }).comments ?? [] : [];
+      renderList(list, [...legacy, ...fresh]);
     } catch {
-      list.innerHTML = '<li class="empty">Couldn\'t load comments. Try refreshing.</li>';
+      renderList(list, legacy);
     }
   }
 
@@ -99,10 +116,11 @@ const { slug } = Astro.props;
     if (!slug) return;
     const list = document.querySelector<HTMLOListElement>(`.comment-list[data-slug="${CSS.escape(slug)}"]`);
     if (!list) return;
+    const legacy: Comment[] = list.dataset.legacy ? JSON.parse(list.dataset.legacy) : [];
     const status = form.querySelector<HTMLSpanElement>('.form-status');
     const submit = form.querySelector<HTMLButtonElement>('button.submit');
 
-    load(slug, list);
+    load(slug, list, legacy);
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -133,7 +151,7 @@ const { slug } = Astro.props;
         status.textContent = 'Posted! Thanks for joining the conversation.';
         status.className = 'form-status ok';
         form.reset();
-        await load(slug, list);
+        await load(slug, list, legacy);
       } catch (err) {
         status.textContent = 'Network error. Try again.';
         status.className = 'form-status error';
@@ -172,19 +190,9 @@ const { slug } = Astro.props;
     display: grid;
     gap: 1rem;
   }
-  .field {
-    display: grid;
-    gap: 0.4rem;
-  }
-  .field > span {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--fg-soft);
-  }
-  .field > span small {
-    font-weight: 400;
-    color: var(--muted);
-  }
+  .field { display: grid; gap: 0.4rem; }
+  .field > span { font-size: 0.85rem; font-weight: 600; color: var(--fg-soft); }
+  .field > span small { font-weight: 400; color: var(--muted); }
   .field input,
   .field textarea {
     padding: 0.6rem 0.85rem;
@@ -196,28 +204,10 @@ const { slug } = Astro.props;
     font-size: 0.95rem;
     font-family: var(--font-sans);
   }
-  .field textarea {
-    resize: vertical;
-    min-height: 6rem;
-    line-height: 1.5;
-  }
-  .field input:focus,
-  .field textarea:focus {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
-  }
-  .hp-field {
-    position: absolute;
-    left: -9999px;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-  }
-  .form-row {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
+  .field textarea { resize: vertical; min-height: 6rem; line-height: 1.5; }
+  .field input:focus, .field textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .hp-field { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .form-row { display: flex; align-items: center; gap: 1rem; }
   .submit {
     padding: 0.65rem 1.4rem;
     background: var(--accent);
@@ -232,10 +222,7 @@ const { slug } = Astro.props;
   }
   .submit:hover:not(:disabled) { background: var(--accent-deep); }
   .submit:disabled { opacity: 0.6; cursor: not-allowed; }
-  .form-status {
-    font-size: 0.85rem;
-    color: var(--muted);
-  }
+  .form-status { font-size: 0.85rem; color: var(--muted); }
   .form-status.ok { color: var(--accent); }
   .form-status.error { color: #b03c2a; }
 
@@ -269,14 +256,6 @@ const { slug } = Astro.props;
     gap: 0.5rem;
     align-items: center;
   }
-  .comment-name {
-    color: var(--fg);
-    font-weight: 600;
-  }
-  .comment-body {
-    margin: 0;
-    line-height: 1.55;
-    white-space: pre-wrap;
-    color: var(--fg-soft);
-  }
+  .comment-name { color: var(--fg); font-weight: 600; }
+  .comment-body { margin: 0; line-height: 1.55; white-space: pre-wrap; color: var(--fg-soft); }
 </style>

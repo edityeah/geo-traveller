@@ -202,6 +202,21 @@ function convertBlock(node: any, out: ConvertResult, $: cheerio.CheerioAPI): Blo
 
   switch (tag) {
     case 'p': {
+      // WordPress wraps images in <p> tags: <p><img></p> or
+      // <p><img><br><img></p>. If any block-level child (img, blockquote,
+      // figure, etc.) is present, treat this <p> as a transparent container
+      // and walk its children with the same logic as the top level — so the
+      // images become their own image blocks instead of getting dropped.
+      const hasBlockChild = (children as any[]).some(
+        (c: any) => c.type === 'tag' && !isInline(c.name.toLowerCase())
+      );
+      if (hasBlockChild) {
+        const sub: ConvertResult = { blocks: [], imageUrls: [], warnings: [] };
+        walk(children as CheerioElement[], sub, $);
+        out.imageUrls.push(...sub.imageUrls);
+        out.warnings.push(...sub.warnings);
+        return sub.blocks;
+      }
       const rich: RichText[] = [];
       collectInlineChildren(children, rich, $);
       if (rich.every((r) => /^\s*$/.test(r.text.content))) return null;
