@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import PostCard from '../components/PostCard.astro';
+import Sidebar from '../components/Sidebar.astro';
 import { getAllPosts, postPath, readMinutes, formatDate, tagSlug, type Post } from '../lib/posts';
 
 const posts = await getAllPosts();
@@ -43,47 +44,52 @@ const everythingElse = rest.filter((p) => !surfacedIds.has(p.id)).slice(0, 9);
     <p>Stories from places I've wandered through — the obvious ones, the obscure ones, and everything between.</p>
   </section>
 
-  {featured && (
-    <a class="featured" href={postPath(featured)}>
-      {featured.data.cover ? (
-        <div class="cover"><img src={featured.data.cover} alt={featured.data.title} /></div>
-      ) : (
-        <div class="cover placeholder" aria-hidden="true"></div>
+  <div class="with-sidebar">
+    <div class="main-col">
+      {featured && (
+        <a class="featured" href={postPath(featured)}>
+          {featured.data.cover ? (
+            <div class="cover"><img src={featured.data.cover} alt={featured.data.title} /></div>
+          ) : (
+            <div class="cover placeholder" aria-hidden="true"></div>
+          )}
+          <div class="featured-text">
+            <div class="kicker">
+              Latest · {featuredDate}
+              {featured.data.locationName && ` · ${featured.data.locationName}`}
+              {` · ${featuredMins} min read`}
+            </div>
+            <h2>{featured.data.title}</h2>
+            {featured.data.excerpt && <p class="excerpt">{featured.data.excerpt}</p>}
+            <span class="read-more">Read the story →</span>
+          </div>
+        </a>
       )}
-      <div class="featured-text">
-        <div class="kicker">
-          Latest · {featuredDate}
-          {featured.data.locationName && ` · ${featured.data.locationName}`}
-          {` · ${featuredMins} min read`}
-        </div>
-        <h2>{featured.data.title}</h2>
-        {featured.data.excerpt && <p class="excerpt">{featured.data.excerpt}</p>}
-        <span class="read-more">Read the story →</span>
-      </div>
-    </a>
-  )}
 
-  {sections.map((sec) => (
-    <section class="section">
-      <header class="section-heading">
-        <h2>{sec.label}</h2>
-        <a class="see-all" href={`/tags/${tagSlug(sec.tag)}/`}>See all →</a>
-      </header>
-      <div class="post-grid three-up">
-        {sec.posts.map((post) => <PostCard post={post} />)}
-      </div>
-    </section>
-  ))}
+      {sections.map((sec) => (
+        <section class="section">
+          <header class="section-heading">
+            <h2>{sec.label}</h2>
+            <a class="see-all" href={`/tags/${tagSlug(sec.tag)}/`}>See all →</a>
+          </header>
+          <div class="post-grid two-up">
+            {sec.posts.slice(0, 2).map((post) => <PostCard post={post} />)}
+          </div>
+        </section>
+      ))}
 
-  {everythingElse.length > 0 && (
-    <section class="section">
-      <header class="section-heading">
-        <h2>More from the archive</h2>
-        <a class="see-all" href="/archive/">Full archive →</a>
-      </header>
-      <div class="post-grid three-up">
-        {everythingElse.map((post) => <PostCard post={post} />)}
-      </div>
-    </section>
-  )}
+      {everythingElse.length > 0 && (
+        <section class="section">
+          <header class="section-heading">
+            <h2>More from the archive</h2>
+            <a class="see-all" href="/archive/">Full archive →</a>
+          </header>
+          <div class="post-grid two-up">
+            {everythingElse.slice(0, 6).map((post) => <PostCard post={post} />)}
+          </div>
+        </section>
+      )}
+    </div>
+    <Sidebar />
+  </div>
 </Base>

@@ -111,12 +111,12 @@ figcaption {
   white-space: nowrap;
 }
 .site-header .brand img {
-  height: 3rem;
+  height: 5rem;
   width: auto;
   display: block;
 }
 @media (max-width: 720px) {
-  .site-header .brand img { height: 2.25rem; }
+  .site-header .brand img { height: 3rem; }
 }
 
 .site-footer {
@@ -332,8 +332,14 @@ a.featured:hover .read-more { color: var(--accent-deep); }
 .post-grid.three-up {
   grid-template-columns: repeat(3, 1fr);
 }
+.post-grid.two-up {
+  grid-template-columns: repeat(2, 1fr);
+}
 @media (max-width: 900px) { .post-grid.three-up { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 600px) { .post-grid.three-up { grid-template-columns: 1fr; } }
+@media (max-width: 600px) {
+  .post-grid.three-up,
+  .post-grid.two-up { grid-template-columns: 1fr; }
+}
 
 .card { container-type: inline-size; }
 .card .card-link {
@@ -396,13 +402,26 @@ a.featured:hover .read-more { color: var(--accent-deep); }
   border-radius: 50%;
 }
 
-/* Post page with right sidebar */
-.post-page-layout {
+/* Layout with right sidebar — used on post pages AND homepage */
+.with-sidebar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 18rem;
   gap: 3rem;
   align-items: start;
 }
+.with-sidebar > .main-col {
+  min-width: 0;
+}
+.with-sidebar > .sidebar {
+  position: sticky;
+  top: 1.5rem;
+}
+@media (max-width: 1024px) {
+  .with-sidebar { grid-template-columns: 1fr; gap: 4rem; }
+  .with-sidebar > .sidebar { position: static; }
+}
+
+/* Post page layout reuses .with-sidebar; keep readable measure for the body. */
 .post-main {
   min-width: 0;
 }
@@ -419,9 +438,6 @@ a.featured:hover .read-more { color: var(--accent-deep); }
   max-width: 38rem;
   margin-left: auto;
   margin-right: auto;
-}
-@media (max-width: 1024px) {
-  .post-page-layout { grid-template-columns: 1fr; gap: 4rem; }
 }
 
 /* Post page */
