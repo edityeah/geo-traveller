@@ -25,7 +25,10 @@ function arr<T>(v: T | T[] | undefined): T[] {
 function pickText(v: any): string {
   if (v === undefined || v === null) return '';
   if (typeof v === 'string') return v;
-  if (typeof v === 'object' && '#text' in v) return String(v['#text']);
+  if (typeof v === 'object') {
+    if ('__cdata' in v) return String(v.__cdata);
+    if ('#text' in v) return String(v['#text']);
+  }
   return String(v);
 }
 

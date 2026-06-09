@@ -1,0 +1,194 @@
+---
+import { tagSlug } from '../lib/posts';
+
+// The nav structure mirrors the WordPress site categories.
+// Each entry is either a flat link or a dropdown with children.
+// Children may themselves have submenus (one level deep).
+const nav: NavItem[] = [
+  { label: 'Home', href: '/' },
+  { label: 'About', href: '/about/' },
+  {
+    label: 'Destinations',
+    children: [
+      {
+        label: 'India',
+        href: `/tags/${tagSlug('India')}/`,
+        children: [
+          { label: 'Himachal Pradesh', href: `/tags/${tagSlug('Himachal Pradesh')}/` },
+          { label: 'Uttar Pradesh', href: `/tags/${tagSlug('Uttar Pradesh')}/` },
+          { label: 'Karnataka', href: `/tags/${tagSlug('Karnataka')}/` },
+        ],
+      },
+      { label: 'Bhutan', href: `/tags/${tagSlug('Bhutan')}/` },
+    ],
+  },
+  {
+    label: 'Geo Daily',
+    href: `/tags/${tagSlug('Geo Daily')}/`,
+    children: [
+      { label: 'Flight', href: `/tags/${tagSlug('Flight')}/` },
+      { label: 'Festival', href: `/tags/${tagSlug('Festival')}/` },
+    ],
+  },
+  {
+    label: 'More',
+    children: [
+      { label: 'Archive', href: '/archive/' },
+      { label: 'Map', href: '/map/' },
+      { label: 'Gallery', href: '/gallery/' },
+      { label: 'Search', href: '/search/' },
+      { label: 'Privacy', href: '/privacy/' },
+      { label: 'Contact', href: '/contact/' },
+    ],
+  },
+];
+
+interface NavItem {
+  label: string;
+  href?: string;
+  children?: NavItem[];
+}
+
+function renderItemId(label: string): string {
+  return label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+}
+---
+
+<nav class="site-nav">
+  {nav.map((item) => (
+    item.children ? (
+      <div class="nav-group">
+        {item.href ? (
+          <a href={item.href} class="nav-top">{item.label} <span class="caret">▾</span></a>
+        ) : (
+          <button type="button" class="nav-top" aria-expanded="false">{item.label} <span class="caret">▾</span></button>
+        )}
+        <div class="nav-dropdown">
+          {item.children.map((child) => (
+            child.children ? (
+              <div class="nav-sub">
+                {child.href ? (
+                  <a href={child.href} class="nav-sub-top">{child.label} <span class="caret">›</span></a>
+                ) : (
+                  <span class="nav-sub-top">{child.label} <span class="caret">›</span></span>
+                )}
+                <div class="nav-subdropdown">
+                  {child.children.map((sub) => (
+                    <a href={sub.href}>{sub.label}</a>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <a href={child.href}>{child.label}</a>
+            )
+          ))}
+        </div>
+      </div>
+    ) : (
+      <a class="nav-top" href={item.href}>{item.label}</a>
+    )
+  ))}
+</nav>
+
+<style>
+  .site-nav {
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+  }
+  .nav-top {
+    color: var(--muted);
+    text-decoration: none;
+    background: none;
+    border: 0;
+    padding: 0.25rem 0;
+    cursor: pointer;
+    font: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .nav-top:hover { color: var(--fg); }
+  .caret { font-size: 0.65em; opacity: 0.7; }
+
+  .nav-group {
+    position: relative;
+  }
+  .nav-dropdown,
+  .nav-subdropdown {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    left: 0;
+    min-width: 12rem;
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+    padding: 0.5rem 0;
+    display: none;
+    z-index: 50;
+  }
+  .nav-group:hover > .nav-dropdown,
+  .nav-group:focus-within > .nav-dropdown {
+    display: block;
+  }
+
+  .nav-dropdown a,
+  .nav-sub-top,
+  .nav-subdropdown a {
+    display: block;
+    padding: 0.5rem 1rem;
+    color: var(--fg-soft);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .nav-dropdown a:hover,
+  .nav-sub-top:hover,
+  .nav-subdropdown a:hover {
+    background: var(--rule);
+    color: var(--accent);
+  }
+
+  .nav-sub {
+    position: relative;
+  }
+  .nav-sub-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+  }
+  .nav-subdropdown {
+    top: -0.5rem;
+    left: 100%;
+  }
+  .nav-sub:hover > .nav-subdropdown,
+  .nav-sub:focus-within > .nav-subdropdown {
+    display: block;
+  }
+
+  @media (max-width: 720px) {
+    .site-nav { gap: 1rem; flex-wrap: wrap; }
+    .nav-dropdown,
+    .nav-subdropdown {
+      position: static;
+      box-shadow: none;
+      border: 0;
+      padding: 0;
+      background: none;
+      min-width: auto;
+    }
+    .nav-group:hover > .nav-dropdown { display: block; }
+    .nav-dropdown a,
+    .nav-sub-top,
+    .nav-subdropdown a {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.8rem;
+    }
+    .nav-subdropdown { padding-left: 1rem; }
+  }
+</style>

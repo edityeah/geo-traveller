@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import SiteNav from '../components/SiteNav.astro';
 
 interface Props {
   title?: string;
@@ -39,13 +40,7 @@ const buttondownUser = import.meta.env.PUBLIC_BUTTONDOWN_USER;
   <body>
     <header class="site-header">
       <a href="/" class="brand">Geo-Traveller</a>
-      <nav>
-        <a href="/archive/">Archive</a>
-        <a href="/map/">Map</a>
-        <a href="/gallery/">Gallery</a>
-        <a href="/search/">Search</a>
-        <a href="/about/">About</a>
-      </nav>
+      <SiteNav />
     </header>
     <main>
       <slot />

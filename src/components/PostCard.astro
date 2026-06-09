@@ -1,6 +1,6 @@
 ---
 import type { Post } from '../lib/posts';
-import { postPath, readMinutes, formatDate } from '../lib/posts';
+import { postPath, readMinutes, formatDate, tagSlug } from '../lib/posts';
 
 interface Props {
   post: Post;
@@ -9,15 +9,30 @@ const { post } = Astro.props;
 const href = postPath(post);
 const date = formatDate(post.data.publishDate);
 const mins = readMinutes(post);
+// Show up to 3 tags on the card. Prefer category-ish tags (those that start
+// with an uppercase letter and don't look like incidental keywords).
+const topTags = (post.data.tags ?? []).slice(0, 3);
 ---
 
 <article class="card">
-  <a href={href}>
+  <a href={href} class="card-link">
     {post.data.cover ? (
       <div class="cover"><img src={post.data.cover} alt={post.data.title} loading="lazy" /></div>
     ) : (
       <div class="cover placeholder" aria-hidden="true"></div>
     )}
+    {topTags.length > 0 && (
+      <div class="kicker">
+        In {topTags.map((t, i) => (
+          <>
+            {i > 0 && <span class="sep">·</span>}
+            <span class="tag-name">{t}</span>
+          </>
+        ))}
+      </div>
+    )}
+    <h2>{post.data.title}</h2>
+    {post.data.excerpt && <p class="excerpt">{post.data.excerpt}</p>}
     <div class="meta">
       <span>{date}</span>
       {post.data.locationName && (
@@ -29,7 +44,5 @@ const mins = readMinutes(post);
       <span class="dot"></span>
       <span>{mins} min</span>
     </div>
-    <h2>{post.data.title}</h2>
-    {post.data.excerpt && <p class="excerpt">{post.data.excerpt}</p>}
   </a>
 </article>
