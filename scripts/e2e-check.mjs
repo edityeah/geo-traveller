@@ -255,7 +255,7 @@ const run = async () => {
 
   const totalProblems =
     pageFailures.length + imgFailures.length + linkFailures.length + jsonLdBad +
-    specialResults.filter((r) => (r.path === '/404' ? r.status !== 404 : r.status !== 200)).length +
+    specialResults.filter((r) => (r.path === MISSING_PATH ? r.status !== 404 : r.status !== 200)).length +
     apiResults.filter((r) => r.status !== 200).length;
 
   console.log('\n' + color('bold', '─────────────────────────────────'));
