@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import Sidebar from '../components/Sidebar.astro';
 import { getCollection, render } from 'astro:content';
 import { personLd, breadcrumbLd, SITE } from '../lib/seo';
+import { getAuthorPhoto, AUTHOR_PHOTO_FALLBACK } from '../lib/author';
 
 export async function getStaticPaths() {
   const pages = await getCollection('pages');
@@ -24,6 +25,8 @@ const ld: Record<string, unknown>[] = [
   ]),
 ];
 if (page.data.slug === 'about') ld.push(personLd());
+
+const authorPhoto = page.data.slug === 'about' ? await getAuthorPhoto() : '';
 ---
 
 <Base title={page.data.title} description={page.data.description} jsonLd={ld}>
@@ -33,9 +36,10 @@ if (page.data.slug === 'about') ld.push(personLd());
         {page.data.slug === 'about' && (
           <div class="about-photo">
             <img
-              src={SITE.author.photo}
+              src={authorPhoto}
               alt={SITE.author.name}
-              onerror="this.onerror=null;this.src='/img/brand/logo-square.png';this.classList.add('is-fallback')"
+              class={authorPhoto === AUTHOR_PHOTO_FALLBACK ? 'is-fallback' : ''}
+              onerror={`this.onerror=null;this.src='${AUTHOR_PHOTO_FALLBACK}';this.classList.add('is-fallback')`}
             />
           </div>
         )}

@@ -88,6 +88,8 @@ export type PageProps = {
   slug: string;
   description?: string;
   showInFooter: boolean;
+  /** "Author Photo" files property — used on the About page. */
+  authorPhotoUrl?: string;
 };
 
 export function extractPageProps(page: PageObjectResponse): PageProps {
@@ -96,7 +98,10 @@ export function extractPageProps(page: PageObjectResponse): PageProps {
   const slug = (plainText(p.Slug?.rich_text) || slugify(title)).toLowerCase();
   const description = plainText(p.Description?.rich_text) || undefined;
   const showInFooter = Boolean(p['Show in footer']?.checkbox);
-  return { id: page.id, title, slug, description, showInFooter };
+  const photoFile = p['Author Photo']?.files?.[0];
+  const authorPhotoUrl =
+    photoFile?.type === 'external' ? photoFile.external.url : photoFile?.file?.url;
+  return { id: page.id, title, slug, description, showInFooter, authorPhotoUrl };
 }
 
 export async function fetchBlocks(blockId: string): Promise<BlockObjectResponse[]> {

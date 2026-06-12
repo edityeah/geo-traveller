@@ -32,6 +32,8 @@ const pages = defineCollection({
     slug: z.string(),
     description: z.string().optional(),
     showInFooter: z.boolean().default(false),
+    // Author headshot, mirrored to R2 from the Notion "Author Photo" property.
+    authorPhoto: z.string().optional(),
   }),
 });
 

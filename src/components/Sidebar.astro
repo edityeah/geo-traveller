@@ -1,6 +1,9 @@
 ---
 import { getAllPosts, postPath, formatDateShort } from '../lib/posts';
 import { SITE } from '../lib/seo';
+import { getAuthorPhoto, AUTHOR_PHOTO_FALLBACK } from '../lib/author';
+
+const authorPhoto = await getAuthorPhoto();
 
 // "Trending" — show 5 most recent published posts (excluding the current post if passed).
 interface Props {
@@ -20,10 +23,11 @@ const buttondownUser = import.meta.env.PUBLIC_BUTTONDOWN_USER;
     <h3 class="sb-title">About</h3>
     <div class="sb-about-photo">
       <img
-        src={SITE.author.photo}
+        src={authorPhoto}
         alt={SITE.author.name}
         loading="lazy"
-        onerror="this.onerror=null;this.src='/img/brand/logo-square.png';this.classList.add('is-fallback')"
+        class={authorPhoto === AUTHOR_PHOTO_FALLBACK ? 'is-fallback' : ''}
+        onerror={`this.onerror=null;this.src='${AUTHOR_PHOTO_FALLBACK}';this.classList.add('is-fallback')`}
       />
     </div>
     <div class="sb-about-body">

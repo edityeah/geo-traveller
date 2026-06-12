@@ -1,14 +1,18 @@
 ---
 import { SITE } from '../lib/seo';
+import { getAuthorPhoto, AUTHOR_PHOTO_FALLBACK } from '../lib/author';
+
+const authorPhoto = await getAuthorPhoto();
 ---
 
 <aside class="author-bio">
   <div class="author-avatar">
     <img
-      src={SITE.author.photo}
+      src={authorPhoto}
       alt={SITE.author.name}
       loading="lazy"
-      onerror="this.onerror=null;this.src='/img/brand/logo-square.png';this.classList.add('is-fallback')"
+      class={authorPhoto === AUTHOR_PHOTO_FALLBACK ? 'is-fallback' : ''}
+      onerror={`this.onerror=null;this.src='${AUTHOR_PHOTO_FALLBACK}';this.classList.add('is-fallback')`}
     />
   </div>
   <div class="author-text">

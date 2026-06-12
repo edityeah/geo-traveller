@@ -22,9 +22,6 @@ export const SITE = {
       'http://facebook.com/thegeotraveller',
     ],
     twitterHandle: '@thegeotraveller',
-    // Author headshot. Drop the file at public/img/brand/aditya.jpg. Until it
-    // exists, components fall back to the square logo via onerror.
-    photo: '/img/brand/aditya.jpg',
   },
   logo: '/img/brand/logo.png',
   logoSquare: '/img/brand/logo-square.png',

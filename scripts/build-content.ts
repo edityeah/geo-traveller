@@ -119,11 +119,18 @@ async function buildPages(warnings: string[]) {
 
     const body = await blocksToMdx(page.id, `page-${props.slug}`, { warnings });
 
+    // Mirror the author headshot to R2 (Notion file URLs expire) so the
+    // sidebar / about page / author bio can reference a stable URL.
+    const authorPhoto = props.authorPhotoUrl
+      ? await mirrorImage(props.authorPhotoUrl, `author-${props.slug}`)
+      : undefined;
+
     const fm = frontmatter({
       title: props.title,
       slug: props.slug,
       description: props.description,
       showInFooter: props.showInFooter,
+      authorPhoto,
     });
 
     const file = join(PAGES_OUT, `${props.slug}.mdx`);
