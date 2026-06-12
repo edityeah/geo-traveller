@@ -4,7 +4,12 @@ import { SITE } from '../lib/seo';
 
 <aside class="author-bio">
   <div class="author-avatar">
-    <img src="/img/brand/logo-square.png" alt="" loading="lazy" />
+    <img
+      src={SITE.author.photo}
+      alt={SITE.author.name}
+      loading="lazy"
+      onerror="this.onerror=null;this.src='/img/brand/logo-square.png';this.classList.add('is-fallback')"
+    />
   </div>
   <div class="author-text">
     <div class="author-kicker">Written by</div>
@@ -49,6 +54,13 @@ import { SITE } from '../lib/seo';
     justify-content: center;
   }
   .author-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  /* Logo fallback (no headshot yet): contain + pad instead of cover-crop. */
+  .author-avatar img.is-fallback {
     width: 80%;
     height: 80%;
     object-fit: contain;

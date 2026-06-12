@@ -1,5 +1,6 @@
 ---
 import { getAllPosts, postPath, formatDateShort } from '../lib/posts';
+import { SITE } from '../lib/seo';
 
 // "Trending" — show 5 most recent published posts (excluding the current post if passed).
 interface Props {
@@ -17,12 +18,18 @@ const buttondownUser = import.meta.env.PUBLIC_BUTTONDOWN_USER;
 <aside class="sidebar">
   <section class="sb-block sb-about">
     <h3 class="sb-title">About</h3>
+    <div class="sb-about-photo">
+      <img
+        src={SITE.author.photo}
+        alt={SITE.author.name}
+        loading="lazy"
+        onerror="this.onerror=null;this.src='/img/brand/logo-square.png';this.classList.add('is-fallback')"
+      />
+    </div>
     <div class="sb-about-body">
       <p>
-        Hello! I am <strong>Aditya</strong> all the way from India. I began
-        with short stories, travels, and other itsy bitsy works on this blog
-        and eventually funneled down to the niches I write best about —
-        travel and writing.
+        I'm <strong>Aditya</strong> — a travel writer and photographer based in
+        India, documenting trips, food, and festivals across India and beyond.
       </p>
       <p class="sb-about-cta">
         <a href="/about/">More about me →</a>
@@ -115,6 +122,28 @@ const buttondownUser = import.meta.env.PUBLIC_BUTTONDOWN_USER;
     margin: 0 0 1rem;
     padding-bottom: 0.5rem;
     border-bottom: 2px solid var(--fg);
+  }
+
+  .sb-about-photo {
+    width: 5.5rem;
+    height: 5.5rem;
+    margin: 0 0 1rem;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--bg-warm);
+    border: 1px solid var(--rule);
+  }
+  .sb-about-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  /* When the headshot is missing we fall back to the logo — contain it so the
+     logo isn't cropped into a circle awkwardly. */
+  .sb-about-photo img.is-fallback {
+    object-fit: contain;
+    padding: 0.6rem;
   }
 
   .sb-about-body {
