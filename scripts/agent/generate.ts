@@ -7,6 +7,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import type { Candidate } from './discover.js';
+import type { SeedTopic } from './topics.js';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY!;
 const MODEL = process.env.AGENT_MODEL ?? 'claude-sonnet-4-5-20250929';
@@ -47,6 +48,23 @@ C. INLINE IMAGES: place 2-4 inline images at moments where a visual helps. Use t
    Pick short, specific Unsplash-friendly queries (2-5 words). The first one should appear after the opening 1-2 paragraphs, not at the very top.
 
 Output the result via the publish_post tool.`;
+
+const SYSTEM_EVERGREEN = `You write evergreen, genuinely useful travel guides for Geo-Traveller by Aditya Chaudhari. Audience: Indians traveling abroad and readers researching a specific process.
+
+This is NOT news. It is a reference guide people find by searching. Make it the most useful page on the topic:
+
+1. Open with a one-paragraph summary of the answer, then a "Last updated" note.
+2. Cover the topic exhaustively and concretely: requirements, document checklists, costs in INR, step-by-step process, timelines, official links, and common mistakes. Use real specifics; never pad.
+3. Use ## and ### headings and lists so it scans well. 800-1400 words.
+4. Do NOT invent facts (fees, processing times). If a number may change, say "as of the latest update, …" and link the official source so the reader can verify.
+5. No emojis, no "In conclusion", no clickbait.
+
+REQUIRED inline links and images — same rules as the news template:
+A. ENTITY LINKS: hyperlink key proper nouns to official sites / Wikipedia (embassies, VFS, government portals). 4-8 links.
+B. INTERNAL BACKLINKS: link to related Geo-Traveller posts by slug, [text](/posts/SLUG/). 1-3.
+C. INLINE IMAGES: 2-4 ![alt](query:specific query) placeholders; first after the intro.
+
+Output via the publish_post tool.`;
 
 const TOOL = {
   name: 'publish_post',
@@ -158,4 +176,40 @@ Write the Geo-Traveller post. Use the publish_post tool to return the result.`;
     sourceUrl: candidate.url,
     sourceName: candidate.source,
   };
+}
+
+export async function generateEvergreen(
+  topic: SeedTopic,
+  existingPosts: ExistingPost[] = []
+): Promise<GeneratedPost> {
+  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+
+  const postList = existingPosts.length
+    ? existingPosts.slice(0, 20).map((p) => `- ${p.title} — slug: ${p.slug}`).join('\n')
+    : '(none yet)';
+
+  const userPrompt = `Write the definitive Geo-Traveller guide on this topic.
+
+Working title: ${topic.title}
+Topic brief: ${topic.brief}
+Suggested tags: ${topic.tags.join(', ')}
+
+Existing Geo-Traveller posts you can backlink to inline when relevant (use the slug):
+
+${postList}
+
+Use the publish_post tool. Set tags to include the relevant ones above (do NOT include "Geo Daily"). coverQuery should describe a fitting photo subject.`;
+
+  const res = await client.messages.create({
+    model: MODEL,
+    max_tokens: 6000,
+    system: SYSTEM_EVERGREEN,
+    tools: [TOOL as any],
+    tool_choice: { type: 'tool', name: 'publish_post' },
+    messages: [{ role: 'user', content: userPrompt }],
+  });
+  const toolUse = res.content.find((c: any) => c.type === 'tool_use');
+  if (!toolUse || toolUse.type !== 'tool_use') throw new Error('Claude did not return a tool_use block');
+  const input = toolUse.input as Omit<GeneratedPost, 'sourceUrl' | 'sourceName'>;
+  return { ...input, sourceUrl: '', sourceName: '' };
 }
