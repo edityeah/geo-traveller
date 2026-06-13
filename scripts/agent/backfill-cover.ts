@@ -4,7 +4,7 @@
  * Falls back to Unsplash query using the post's tags / location.
  */
 import { Client, isFullPage } from '@notionhq/client';
-import { pickCover } from './cover.js';
+import { resolveCover } from './images.js';
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN! });
 const DB = process.env.NOTION_DATABASE_ID!;
@@ -35,7 +35,8 @@ async function main() {
       const locationName = plain(props['Location Name']?.rich_text);
       console.log(`Fixing: ${title}`);
 
-      const pick = await pickCover({
+      const pick = await resolveCover({
+        type: 'news',
         candidateUrl: sourceUrl,
         unsplashQuery: title.split(/\W+/).slice(0, 3).join(' '),
         fallbackQueries: [locationName, tags[0], tags.slice(0, 2).join(' ')].filter(Boolean) as string[],

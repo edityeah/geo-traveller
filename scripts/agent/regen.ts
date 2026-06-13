@@ -9,8 +9,7 @@
 import { Client, isFullPage, isFullBlock } from '@notionhq/client';
 import type { Candidate } from './discover.js';
 import { generatePost, type ExistingPost } from './generate.js';
-import { resolveInlineImages } from './inline-images.js';
-import { pickCover } from './cover.js';
+import { resolveInlineImages, resolveCover } from './images.js';
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN! });
 const DB = process.env.NOTION_DATABASE_ID!;
@@ -98,7 +97,8 @@ async function main() {
   const inlineImageCount = (body.match(/!\[[^\]]*\]\(https?:/g) ?? []).length;
   console.log(`Inline images: ${inlineImageCount}`);
 
-  const coverPick = await pickCover({
+  const coverPick = await resolveCover({
+    type: 'news',
     candidateUrl: sourceUrl,
     unsplashQuery: post.coverQuery,
     fallbackQueries: [
