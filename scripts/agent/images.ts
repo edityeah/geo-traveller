@@ -185,9 +185,13 @@ export async function selectWithVision(
     });
     const text = (res.content.find((c: any) => c.type === 'text') as any)?.text ?? '';
     const idx = parseVisionChoice(text, list.length);
-    if (idx === null) return opts.allowNone === false ? list[0] : null;
+    if (idx === null) {
+      console.log(`[images] vision(${opts.mode ?? 'inline'}) reply="${text.trim().slice(0, 40)}" → ${opts.allowNone === false ? 'fallback first' : 'none'}`);
+      return opts.allowNone === false ? list[0] : null;
+    }
     return list[idx - 1];
-  } catch {
+  } catch (e: any) {
+    console.warn(`[images] vision(${opts.mode ?? 'inline'}) ERROR: ${e?.status ?? ''} ${e?.message ?? e}`);
     // Vision failed — fall back to the first candidate (old behaviour) rather
     // than blocking the post.
     return opts.allowNone === false ? list[0] : null;
@@ -261,6 +265,7 @@ export async function resolveInlineImages(body: string): Promise<string> {
       ...(await unsplashCandidates(j.query, 4)),
     ];
     const subject = j.alt && j.alt !== 'image' ? `${j.alt} (${j.query})` : j.query;
+    console.log(`[images] inline "${j.query}": ${candidates.length} candidates`);
     const chosen = await selectWithVision(subject, candidates, { max: 6, allowNone: true, mode: 'inline' });
     out = chosen ? out.replace(j.full, `![${j.alt}](${chosen.full})`) : out.replace(j.full, '');
   }
