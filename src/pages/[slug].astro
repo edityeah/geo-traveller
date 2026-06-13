@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Sidebar from '../components/Sidebar.astro';
+import ContactForm from '../components/ContactForm.astro';
 import { getCollection, render } from 'astro:content';
 import { personLd, breadcrumbLd, SITE } from '../lib/seo';
 import { getAuthorPhoto, AUTHOR_PHOTO_FALLBACK } from '../lib/author';
@@ -51,6 +52,7 @@ const authorPhoto = page.data.slug === 'about' ? await getAuthorPhoto() : '';
       <div class="post-body" style="max-width: var(--measure); margin: 0 auto;">
         <Content />
       </div>
+      {page.data.slug === 'contact' && <ContactForm />}
     </div>
     <Sidebar />
   </article>

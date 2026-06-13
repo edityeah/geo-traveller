@@ -1,0 +1,163 @@
+---
+// Contact form. Posts to /api/contact (Cloudflare Pages Function), which writes
+// the submission to the "Contact Submissions" Notion database.
+---
+
+<form class="contact-form" id="contact-form" novalidate>
+  <div class="cf-row">
+    <label>
+      <span>Name</span>
+      <input type="text" name="name" autocomplete="name" required maxlength="100" />
+    </label>
+    <label>
+      <span>Email</span>
+      <input type="email" name="email" autocomplete="email" required maxlength="200" />
+    </label>
+  </div>
+  <label>
+    <span>Subject <em>(optional)</em></span>
+    <input type="text" name="subject" maxlength="200" />
+  </label>
+  <label>
+    <span>Message</span>
+    <textarea name="message" rows="6" required maxlength="5000"></textarea>
+  </label>
+  <!-- Honeypot: hidden from humans, bots fill it. -->
+  <div class="cf-hp" aria-hidden="true">
+    <label>Leave this empty<input type="text" name="hp" tabindex="-1" autocomplete="off" /></label>
+  </div>
+  <div class="cf-actions">
+    <button type="submit">Send message</button>
+    <p class="cf-status" role="status" aria-live="polite"></p>
+  </div>
+</form>
+
+<script>
+  const form = document.getElementById('contact-form') as HTMLFormElement | null;
+  if (form) {
+    const status = form.querySelector('.cf-status') as HTMLElement;
+    const button = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.textContent = '';
+      status.className = 'cf-status';
+
+      const data = Object.fromEntries(new FormData(form).entries());
+      if (!data.name || !data.email || !data.message) {
+        status.textContent = 'Please fill in your name, email, and message.';
+        status.classList.add('is-error');
+        return;
+      }
+
+      button.disabled = true;
+      const original = button.textContent;
+      button.textContent = 'Sending…';
+
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok) {
+          form.reset();
+          status.textContent = 'Thanks! Your message has been sent — I’ll get back to you.';
+          status.classList.add('is-success');
+        } else {
+          status.textContent = json.error || 'Something went wrong. Please try again.';
+          status.classList.add('is-error');
+        }
+      } catch {
+        status.textContent = 'Network error. Please try again.';
+        status.classList.add('is-error');
+      } finally {
+        button.disabled = false;
+        button.textContent = original;
+      }
+    });
+  }
+</script>
+
+<style>
+  .contact-form {
+    max-width: var(--measure);
+    margin: 2.5rem auto 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    font-family: var(--font-sans);
+  }
+  .cf-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .contact-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--fg-soft);
+  }
+  .contact-form label em {
+    font-weight: 400;
+    font-style: normal;
+    color: var(--muted);
+  }
+  .contact-form input,
+  .contact-form textarea {
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 400;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid var(--rule-strong);
+    border-radius: 8px;
+    background: var(--bg-elev);
+    color: var(--fg);
+    width: 100%;
+  }
+  .contact-form textarea { resize: vertical; }
+  .contact-form input:focus,
+  .contact-form textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+  /* Honeypot — visually hidden but not display:none (some bots skip those). */
+  .cf-hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .cf-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .contact-form button {
+    padding: 0.7rem 1.5rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .contact-form button:hover { background: var(--accent-deep); }
+  .contact-form button:disabled { opacity: 0.6; cursor: default; }
+  .cf-status { margin: 0; font-size: 0.9rem; }
+  .cf-status.is-success { color: var(--accent-deep); }
+  .cf-status.is-error { color: #b3261e; }
+
+  @media (max-width: 560px) {
+    .cf-row { grid-template-columns: 1fr; }
+  }
+</style>
