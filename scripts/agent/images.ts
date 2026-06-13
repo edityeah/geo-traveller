@@ -149,12 +149,25 @@ export async function selectWithVision(
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return list[0]; // can't verify offline; best effort
 
+  // Anthropic cannot reliably fetch arbitrary image URLs (Wikimedia/Unsplash
+  // return 400 "Unable to download the file"). So we download the bytes here
+  // and send them as base64 — the only reliable way to actually show Claude the
+  // image. Candidates that fail to download or aren't a supported type are
+  // skipped, and the numbering follows the successfully-encoded list.
+  const encoded: { cand: Candidate; media_type: string; data: string }[] = [];
+  for (const c of list) {
+    const img = await toBase64Image(c.thumb);
+    if (img) encoded.push({ cand: c, ...img });
+  }
+  if (encoded.length === 0) return opts.allowNone === false ? list[0] : null;
+
   const content: any[] = [];
-  list.forEach((c, i) => {
+  encoded.forEach((e, i) => {
     content.push({ type: 'text', text: `Image ${i + 1}:` });
-    content.push({ type: 'image', source: { type: 'url', url: c.thumb } });
+    content.push({ type: 'image', source: { type: 'base64', media_type: e.media_type, data: e.data } });
   });
 
+  const count = encoded.length;
   const instruction = opts.mode === 'cover'
     ? // Covers: strict + scenic. The hero image must be relevant and attractive.
       `These are candidate COVER photos for a travel article: "${subject}".\n\n` +
@@ -165,14 +178,14 @@ export async function selectWithVision(
       `- shows government officials, politicians, ceremonies, handshakes, or press/news scenes;\n` +
       `- is a close-up of paperwork, a postage stamp, a book/text page, a document scan, a screenshot, a logo, a map, a chart;\n` +
       `- is dated/historical, watermarked, blurry, or low quality.\n` +
-      `Reply with ONLY the number (1-${list.length}). If none are great, reply with the single best available number.`
+      `Reply with ONLY the number (1-${count}). If none are great, reply with the single best available number.`
     : // Inline: lenient. A clean, on-topic generic photo is fine.
       `These are candidate images to ILLUSTRATE this point in an article: "${subject}".\n\n` +
       `Pick the ONE that best and most clearly illustrates the subject. A clean, generic photo of the right ` +
       `kind of object, place, or scene is perfectly fine — do not over-reject on small specifics.\n` +
       `REJECT only images that are: clearly off-topic; a page of text, a book cover, a document scan, a ` +
       `screenshot, a logo, a chart, or a diagram; watermarked; or low quality.\n` +
-      `Reply with ONLY the number of the best image (1-${list.length}), or "none" if none reasonably fit.`;
+      `Reply with ONLY the number of the best image (1-${count}), or "none" if none reasonably fit.`;
 
   content.push({ type: 'text', text: instruction });
 
@@ -184,17 +197,41 @@ export async function selectWithVision(
       messages: [{ role: 'user', content }],
     });
     const text = (res.content.find((c: any) => c.type === 'text') as any)?.text ?? '';
-    const idx = parseVisionChoice(text, list.length);
+    const idx = parseVisionChoice(text, count);
     if (idx === null) {
       console.log(`[images] vision(${opts.mode ?? 'inline'}) reply="${text.trim().slice(0, 40)}" → ${opts.allowNone === false ? 'fallback first' : 'none'}`);
-      return opts.allowNone === false ? list[0] : null;
+      return opts.allowNone === false ? encoded[0].cand : null;
     }
-    return list[idx - 1];
+    return encoded[idx - 1].cand;
   } catch (e: any) {
     console.warn(`[images] vision(${opts.mode ?? 'inline'}) ERROR: ${e?.status ?? ''} ${e?.message ?? e}`);
-    // Vision failed — fall back to the first candidate (old behaviour) rather
-    // than blocking the post.
-    return opts.allowNone === false ? list[0] : null;
+    // Vision errored — fall back to the first downloaded candidate (covers)
+    // rather than blocking the post; drop (inline).
+    return opts.allowNone === false ? encoded[0].cand : null;
+  }
+}
+
+const SUPPORTED_IMG = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+
+/** Download an image URL and return base64 + media type, or null if unusable. */
+async function toBase64Image(url: string): Promise<{ media_type: string; data: string } | null> {
+  try {
+    const r = await fetch(url, { headers: { 'User-Agent': 'geo-traveller-agent/1.0' } });
+    if (!r.ok) return null;
+    let ct = (r.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+    if (!SUPPORTED_IMG.has(ct)) {
+      // Infer from extension as a fallback.
+      if (/\.(jpe?g)(\?|$)/i.test(url)) ct = 'image/jpeg';
+      else if (/\.png(\?|$)/i.test(url)) ct = 'image/png';
+      else if (/\.webp(\?|$)/i.test(url)) ct = 'image/webp';
+      else if (/\.gif(\?|$)/i.test(url)) ct = 'image/gif';
+      else return null;
+    }
+    const buf = Buffer.from(await r.arrayBuffer());
+    if (buf.length === 0 || buf.length > 4_500_000) return null; // ~5MB API cap per image
+    return { media_type: ct, data: buf.toString('base64') };
+  } catch {
+    return null;
   }
 }
 
