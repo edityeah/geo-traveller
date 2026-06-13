@@ -157,12 +157,15 @@ export async function selectWithVision(
   content.push({
     type: 'text',
     text:
-      `These are candidate images for a travel blog. Choose the ONE image that best and most literally depicts: "${subject}".\n` +
-      `Reject any image that is off-topic, a book cover or page of text, a screenshot, a logo, a map, a chart, ` +
-      `watermarked, low quality, or a dated/historical photo when a current generic photo is wanted. ` +
-      `Only pick an image you would be happy to publish for this subject.\n` +
+      `These are candidate images for a travel blog. Pick the ONE image that clearly and specifically depicts: "${subject}".\n\n` +
+      `STRICT — REJECT (never pick) any image that:\n` +
+      `- shows a DIFFERENT country, city, flag, or landmark than the subject (e.g. a US embassy for a Japan article);\n` +
+      `- shows government officials, politicians, ceremonies, handshakes, or press/news scenes;\n` +
+      `- is a book cover, a page of text, a document scan, a screenshot, a logo, a map, a chart, or a diagram;\n` +
+      `- is dated/historical, watermarked, blurry, or low quality.\n\n` +
+      `Prefer a clean, modern, professional photo a travel magazine would run.\n` +
       `Reply with ONLY the number of the best image (1-${list.length})` +
-      (opts.allowNone === false ? '.' : `, or "none" if none are suitable.`),
+      (opts.allowNone === false ? `. If truly none fit, reply with the single best available number.` : `, or "none" if none clearly fit.`),
   });
 
   try {
@@ -212,21 +215,21 @@ export async function resolveCover(o: CoverOpts): Promise<{ url?: string; source
     }
   }
 
-  const queries = [o.unsplashQuery, ...(o.fallbackQueries ?? [])].filter(Boolean) as string[];
-  const primary = queries[0] ?? 'travel';
+  // Covers use CLEAN STOCK ONLY (Unsplash/Pexels). We deliberately do NOT pull
+  // from Wikimedia/Wikipedia for covers — those return dated documentary photos
+  // and wrong-entity results (e.g. a US embassy for a Japan visa guide).
+  const queries = [o.unsplashQuery, ...(o.fallbackQueries ?? [])]
+    .map((q) => (q ?? '').trim()).filter(Boolean);
+  const primary = queries[0] ?? 'travel photography';
   const candidates: Candidate[] = [];
-  if (o.imageEntity) {
-    const wp = await wikipediaCandidate(o.imageEntity);
-    if (wp) candidates.push(wp);
-    candidates.push(...(await wikimediaCandidates(o.imageEntity, 3)));
+  for (const q of queries.slice(0, 4)) {
+    candidates.push(...(await unsplashCandidates(q, 3)));
   }
   candidates.push(...(await pexelsCandidates(primary, 3)));
-  candidates.push(...(await pixabayCandidates(primary, 2)));
-  candidates.push(...(await unsplashCandidates(primary, 4)));
-  if (queries[1]) candidates.push(...(await unsplashCandidates(queries[1], 2)));
+  if (queries[1]) candidates.push(...(await pexelsCandidates(queries[1], 2)));
 
-  const subject = o.title ? `the cover photo for an article titled "${o.title}" (subject: ${primary})` : primary;
-  // Cover should always end up with something — fall back to first candidate.
+  const subject = o.title ? `the cover photo for an article titled "${o.title}"` : primary;
+  // Cover should always end up with something clean — fall back to first candidate.
   const chosen = await selectWithVision(subject, candidates, { max: 8, allowNone: false });
   return chosen ? { url: chosen.full, source: `vision:${chosen.source}` } : { url: undefined, source: 'none' };
 }

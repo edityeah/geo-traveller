@@ -12,7 +12,7 @@ test('every seed topic is fully specified', () => {
     assert.ok(t.key && t.key.includes(':'), `bad key: ${t.key}`);
     assert.ok(t.title.length > 0, `missing title for ${t.key}`);
     assert.ok(t.brief.length > 0, `missing brief for ${t.key}`);
-    assert.ok(t.imageEntity.length > 0, `missing imageEntity for ${t.key}`);
+    assert.ok(t.coverQueries.length > 0, `missing coverQueries for ${t.key}`);
   }
 });
 

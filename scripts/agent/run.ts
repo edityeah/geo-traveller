@@ -109,11 +109,14 @@ async function doEvergreen(posts: Awaited<ReturnType<typeof loadPosts>>, existin
   console.log(`[agent] evergreen topic: ${topic.key} — ${topic.title}`);
 
   const post = await generateEvergreen(topic, existing);
+  const requested = (post.body.match(/\]\(query:/g) ?? []).length;
   const body = await resolveInlineImages(post.body);
+  const kept = (body.match(/!\[[^\]]*\]\(https?:\/\//g) ?? []).length;
+  console.log(`[agent] inline images: ${requested} requested → ${kept} kept`);
   const slug = (post.slug || slugify(post.title)).replace(/[^a-z0-9-]/g, '');
   const cover = await resolveCover({
-    type: 'evergreen', title: post.title, imageEntity: topic.imageEntity, unsplashQuery: post.coverQuery,
-    fallbackQueries: [topic.tags[0], post.locationName].filter(Boolean) as string[],
+    type: 'evergreen', title: post.title, unsplashQuery: post.coverQuery,
+    fallbackQueries: [...topic.coverQueries, post.locationName].filter(Boolean) as string[],
   });
   console.log(`[agent] cover: ${cover.source}`);
   const qa = await runQa({ title: post.title, body });
@@ -141,7 +144,10 @@ async function doNews(posts: Awaited<ReturnType<typeof loadPosts>>, existing: Ex
   console.log(`[agent] news: ${candidate.title}`);
 
   const post = await generatePost(candidate, existing);
+  const requested = (post.body.match(/\]\(query:/g) ?? []).length;
   const body = await resolveInlineImages(post.body);
+  const kept = (body.match(/!\[[^\]]*\]\(https?:\/\//g) ?? []).length;
+  console.log(`[agent] inline images: ${requested} requested → ${kept} kept`);
   const slug = (post.slug || slugify(post.title)).replace(/[^a-z0-9-]/g, '');
   const cover = await resolveCover({
     type: 'news', title: post.title, unsplashQuery: post.coverQuery, candidateImageUrl: candidate.imageUrl,
