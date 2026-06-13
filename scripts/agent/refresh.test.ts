@@ -20,3 +20,17 @@ test('matchGuide does not match UK guide for Japan news', () => {
   const g = matchGuide('Japan visa fee change', '', guides);
   assert.notEqual(g?.key, 'visa:uk:in');
 });
+
+const usGuides: GuideRef[] = [
+  { pageId: '3', key: 'visa:us:in', title: 'US Visa from India', slug: 'us-visa-from-india' },
+];
+
+test('matchGuide rejects the pronoun "us" (no false positive)', () => {
+  // "us" appears as a pronoun, not the country — must NOT match the US guide.
+  assert.equal(matchGuide('Airline invites us to try its new visa-free lounge', '', usGuides), null);
+});
+
+test('matchGuide matches a real US visa story via alias phrase', () => {
+  assert.equal(matchGuide('United States raises visa fees for Indians', '', usGuides)?.key, 'visa:us:in');
+  assert.equal(matchGuide('New US visa appointment rules announced', '', usGuides)?.key, 'visa:us:in');
+});

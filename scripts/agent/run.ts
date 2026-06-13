@@ -18,7 +18,7 @@ import { seedTopics } from './topics.js';
 import { topicSignals, rankTopicsBySignal } from './keywords.js';
 import { chooseCategory, pickEvergreenTopic, type DayCounts } from './planner.js';
 import { matchGuide, refreshGuide, type GuideRef } from './refresh.js';
-import { runQa } from './qa.js';
+import { runQa, deterministicChecks } from './qa.js';
 
 const EVERGREEN_PER_DAY = Number(process.env.AGENT_EVERGREEN_PER_DAY ?? 5);
 const NEWS_PER_DAY = Number(process.env.AGENT_NEWS_PER_DAY ?? 7);
@@ -170,11 +170,16 @@ async function doNews(posts: Awaited<ReturnType<typeof loadPosts>>, existing: Ex
         existing
       );
       const refreshedBody = await resolveInlineImages(refreshed.body);
+      // QA the refreshed body before overwriting the LIVE guide. The guide is
+      // intentionally left QA=Flagged after a refresh so you re-glance at the
+      // auto-changed live page; any deterministic issues are surfaced in the note.
+      const refreshIssues = deterministicChecks({ title: guide.title, body: refreshedBody });
+      const note = [`folded in: ${candidate.title}`, ...refreshIssues].join(' | ');
       await refreshGuide({
         guide, newBodyMarkdown: refreshedBody, isoDate: todayUtc(),
-        qaNote: `folded in: ${candidate.title}`.slice(0, 200), buildBlocks: mdToBlocks,
+        qaNote: note.slice(0, 200), buildBlocks: mdToBlocks,
       });
-      console.log(`[agent] refreshed guide ${guide.slug} in place.`);
+      console.log(`[agent] refreshed guide ${guide.slug} in place${refreshIssues.length ? ' (QA issues noted)' : ''}.`);
     } catch (e: any) {
       console.warn(`[agent] guide refresh failed (guide untouched): ${e?.message ?? e}`);
     }

@@ -35,12 +35,8 @@ export async function autocomplete(phrase: string): Promise<string[]> {
 export async function topicSignals(topics: SeedTopic[]): Promise<Map<string, number>> {
   const out = new Map<string, number>();
   for (const t of topics) {
-    let score = 0;
-    for (const hint of t.searchHints) {
-      const sugg = await autocomplete(hint);
-      score += sugg.length;
-    }
-    out.set(t.key, score);
+    const lists = await Promise.all(t.searchHints.map((h) => autocomplete(h)));
+    out.set(t.key, lists.reduce((sum, s) => sum + s.length, 0));
   }
   return out;
 }
