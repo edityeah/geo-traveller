@@ -112,7 +112,7 @@ async function doEvergreen(posts: Awaited<ReturnType<typeof loadPosts>>, existin
   const body = await resolveInlineImages(post.body);
   const slug = (post.slug || slugify(post.title)).replace(/[^a-z0-9-]/g, '');
   const cover = await resolveCover({
-    type: 'evergreen', imageEntity: topic.imageEntity, unsplashQuery: post.coverQuery,
+    type: 'evergreen', title: post.title, imageEntity: topic.imageEntity, unsplashQuery: post.coverQuery,
     fallbackQueries: [topic.tags[0], post.locationName].filter(Boolean) as string[],
   });
   console.log(`[agent] cover: ${cover.source}`);
@@ -144,7 +144,7 @@ async function doNews(posts: Awaited<ReturnType<typeof loadPosts>>, existing: Ex
   const body = await resolveInlineImages(post.body);
   const slug = (post.slug || slugify(post.title)).replace(/[^a-z0-9-]/g, '');
   const cover = await resolveCover({
-    type: 'news', unsplashQuery: post.coverQuery, candidateImageUrl: candidate.imageUrl,
+    type: 'news', title: post.title, unsplashQuery: post.coverQuery, candidateImageUrl: candidate.imageUrl,
     candidateUrl: candidate.url, fallbackQueries: [post.locationName, post.tags[0]].filter(Boolean) as string[],
   });
   console.log(`[agent] cover: ${cover.source}`);

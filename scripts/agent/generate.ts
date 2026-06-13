@@ -39,13 +39,16 @@ A. ENTITY LINKS (external): naturally hyperlink the key proper-nouns to their of
 
 B. INTERNAL BACKLINKS: you will be given a list of existing Geo-Traveller posts. When something in the post is topically related to one of those, link it inline using the post's slug, like [as we covered earlier](/posts/SLUG/). Aim for 1-3 internal backlinks per post. Pick relevant ones; don't force fits.
 
-C. INLINE IMAGES: place 2-4 inline images at moments where a visual helps. Use this exact markdown syntax with a special "query:" URL — the build pipeline replaces these with real photos:
+C. INLINE IMAGES: place 2-4 inline images at moments where a visual helps. Use this exact markdown syntax with a special "query:" URL — the build pipeline finds real photos and verifies each one visually before using it:
 
-   ![Descriptive alt text](query:short search query here)
+   ![Descriptive alt text](query:concrete photographable subject)
 
-   Example: ![Hotel front desk at dusk](query:luxury hotel reception)
+   Example: ![A traveler's passport with a visa sticker](query:passport with visa sticker)
 
-   Pick short, specific Unsplash-friendly queries (2-5 words). The first one should appear after the opening 1-2 paragraphs, not at the very top.
+   CRITICAL: the query MUST name a concrete, literal, photographable THING — a real object, place, building, document, person, or scene that a stock photo would actually show. The alt text and the query must describe the SAME concrete thing.
+   GOOD queries: "Japanese passport and visa page", "Tokyo Narita airport terminal", "person at embassy visa counter", "Indian rupee banknotes and credit card".
+   BAD queries (never use — these are abstract and return junk): "document checklist", "travel requirements", "application process", "planning a trip", "eligibility criteria". If a section is about an abstract concept, either choose a concrete object that represents it or omit the image.
+   The first image should appear after the opening 1-2 paragraphs, not at the very top.
 
 Output the result via the publish_post tool.`;
 

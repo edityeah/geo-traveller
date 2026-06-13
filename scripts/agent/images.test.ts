@@ -1,25 +1,20 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { firstHit, type ImageSource } from './images.ts';
+import { parseVisionChoice } from './images.ts';
 
-test('firstHit returns the first source that yields a url', async () => {
-  const sources: ImageSource[] = [
-    { name: 'a', get: async () => undefined },
-    { name: 'b', get: async () => 'https://img/b.jpg' },
-    { name: 'c', get: async () => 'https://img/c.jpg' },
-  ];
-  assert.deepEqual(await firstHit(sources), { url: 'https://img/b.jpg', source: 'b' });
+test('parseVisionChoice reads a bare number', () => {
+  assert.equal(parseVisionChoice('3', 6), 3);
+  assert.equal(parseVisionChoice('Image 2', 6), 2);
+  assert.equal(parseVisionChoice(' 1 ', 6), 1);
 });
 
-test('firstHit returns none when all empty', async () => {
-  const sources: ImageSource[] = [{ name: 'a', get: async () => undefined }];
-  assert.deepEqual(await firstHit(sources), { url: undefined, source: 'none' });
+test('parseVisionChoice returns null for "none"', () => {
+  assert.equal(parseVisionChoice('none', 6), null);
+  assert.equal(parseVisionChoice('None of these fit', 6), null);
+  assert.equal(parseVisionChoice('', 6), null);
 });
 
-test('firstHit skips a throwing source', async () => {
-  const sources: ImageSource[] = [
-    { name: 'a', get: async () => { throw new Error('boom'); } },
-    { name: 'b', get: async () => 'https://img/b.jpg' },
-  ];
-  assert.deepEqual(await firstHit(sources), { url: 'https://img/b.jpg', source: 'b' });
+test('parseVisionChoice rejects out-of-range numbers', () => {
+  assert.equal(parseVisionChoice('9', 6), null);
+  assert.equal(parseVisionChoice('0', 6), null);
 });
