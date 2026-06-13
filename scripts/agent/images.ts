@@ -142,7 +142,7 @@ function dedupe(cands: Candidate[]): Candidate[] {
 export async function selectWithVision(
   subject: string,
   candidates: Candidate[],
-  opts: { max?: number; allowNone?: boolean } = {}
+  opts: { max?: number; allowNone?: boolean; mode?: 'cover' | 'inline' } = {}
 ): Promise<Candidate | null> {
   const list = dedupe(candidates).slice(0, opts.max ?? 6);
   if (list.length === 0) return null;
@@ -154,19 +154,27 @@ export async function selectWithVision(
     content.push({ type: 'text', text: `Image ${i + 1}:` });
     content.push({ type: 'image', source: { type: 'url', url: c.thumb } });
   });
-  content.push({
-    type: 'text',
-    text:
-      `These are candidate images for a travel blog. Pick the ONE image that clearly and specifically depicts: "${subject}".\n\n` +
-      `STRICT — REJECT (never pick) any image that:\n` +
+
+  const instruction = opts.mode === 'cover'
+    ? // Covers: strict + scenic. The hero image must be relevant and attractive.
+      `These are candidate COVER photos for a travel article: "${subject}".\n\n` +
+      `Pick the ONE that makes the best hero image — prefer an iconic, attractive landmark, ` +
+      `skyline, cityscape, flag, or clearly-relevant scene for the destination/topic.\n` +
+      `REJECT (never pick) any image that:\n` +
       `- shows a DIFFERENT country, city, flag, or landmark than the subject (e.g. a US embassy for a Japan article);\n` +
       `- shows government officials, politicians, ceremonies, handshakes, or press/news scenes;\n` +
-      `- is a book cover, a page of text, a document scan, a screenshot, a logo, a map, a chart, or a diagram;\n` +
-      `- is dated/historical, watermarked, blurry, or low quality.\n\n` +
-      `Prefer a clean, modern, professional photo a travel magazine would run.\n` +
-      `Reply with ONLY the number of the best image (1-${list.length})` +
-      (opts.allowNone === false ? `. If truly none fit, reply with the single best available number.` : `, or "none" if none clearly fit.`),
-  });
+      `- is a close-up of paperwork, a postage stamp, a book/text page, a document scan, a screenshot, a logo, a map, a chart;\n` +
+      `- is dated/historical, watermarked, blurry, or low quality.\n` +
+      `Reply with ONLY the number (1-${list.length}). If none are great, reply with the single best available number.`
+    : // Inline: lenient. A clean, on-topic generic photo is fine.
+      `These are candidate images to ILLUSTRATE this point in an article: "${subject}".\n\n` +
+      `Pick the ONE that best and most clearly illustrates the subject. A clean, generic photo of the right ` +
+      `kind of object, place, or scene is perfectly fine — do not over-reject on small specifics.\n` +
+      `REJECT only images that are: clearly off-topic; a page of text, a book cover, a document scan, a ` +
+      `screenshot, a logo, a chart, or a diagram; watermarked; or low quality.\n` +
+      `Reply with ONLY the number of the best image (1-${list.length}), or "none" if none reasonably fit.`;
+
+  content.push({ type: 'text', text: instruction });
 
   try {
     const client = new Anthropic({ apiKey: key });
@@ -228,9 +236,9 @@ export async function resolveCover(o: CoverOpts): Promise<{ url?: string; source
   candidates.push(...(await pexelsCandidates(primary, 3)));
   if (queries[1]) candidates.push(...(await pexelsCandidates(queries[1], 2)));
 
-  const subject = o.title ? `the cover photo for an article titled "${o.title}"` : primary;
+  const subject = o.title ? `"${o.title}"` : primary;
   // Cover should always end up with something clean — fall back to first candidate.
-  const chosen = await selectWithVision(subject, candidates, { max: 8, allowNone: false });
+  const chosen = await selectWithVision(subject, candidates, { max: 8, allowNone: false, mode: 'cover' });
   return chosen ? { url: chosen.full, source: `vision:${chosen.source}` } : { url: undefined, source: 'none' };
 }
 
@@ -253,7 +261,7 @@ export async function resolveInlineImages(body: string): Promise<string> {
       ...(await unsplashCandidates(j.query, 4)),
     ];
     const subject = j.alt && j.alt !== 'image' ? `${j.alt} (${j.query})` : j.query;
-    const chosen = await selectWithVision(subject, candidates, { max: 6, allowNone: true });
+    const chosen = await selectWithVision(subject, candidates, { max: 6, allowNone: true, mode: 'inline' });
     out = chosen ? out.replace(j.full, `![${j.alt}](${chosen.full})`) : out.replace(j.full, '');
   }
   return out;

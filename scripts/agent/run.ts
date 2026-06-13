@@ -114,9 +114,12 @@ async function doEvergreen(posts: Awaited<ReturnType<typeof loadPosts>>, existin
   const kept = (body.match(/!\[[^\]]*\]\(https?:\/\//g) ?? []).length;
   console.log(`[agent] inline images: ${requested} requested → ${kept} kept`);
   const slug = (post.slug || slugify(post.title)).replace(/[^a-z0-9-]/g, '');
+  // Drive evergreen covers from the curated scenic subjects (landmark/skyline/
+  // flag) rather than the model's coverQuery, which skews to document close-ups.
   const cover = await resolveCover({
-    type: 'evergreen', title: post.title, unsplashQuery: post.coverQuery,
-    fallbackQueries: [...topic.coverQueries, post.locationName].filter(Boolean) as string[],
+    type: 'evergreen', title: post.title,
+    unsplashQuery: topic.coverQueries[0] ?? post.coverQuery,
+    fallbackQueries: [...topic.coverQueries.slice(1), post.coverQuery, post.locationName].filter(Boolean) as string[],
   });
   console.log(`[agent] cover: ${cover.source}`);
   const qa = await runQa({ title: post.title, body });
