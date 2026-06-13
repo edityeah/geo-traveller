@@ -296,10 +296,12 @@ export async function resolveInlineImages(body: string): Promise<string> {
 
   let out = body;
   for (const j of jobs) {
+    // Clean stock only. Wikimedia returns documentary/wrong-entity junk for
+    // conceptual queries (e.g. a French-embassy voting scene for "embassy
+    // counter"), so we don't use it for inline illustrations.
     const candidates: Candidate[] = [
-      ...(await wikimediaCandidates(j.query, 3)),
-      ...(await pexelsCandidates(j.query, 2)),
-      ...(await unsplashCandidates(j.query, 4)),
+      ...(await unsplashCandidates(j.query, 5)),
+      ...(await pexelsCandidates(j.query, 3)),
     ];
     const subject = j.alt && j.alt !== 'image' ? `${j.alt} (${j.query})` : j.query;
     console.log(`[images] inline "${j.query}": ${candidates.length} candidates`);
