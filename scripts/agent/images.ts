@@ -19,7 +19,9 @@ import Anthropic from '@anthropic-ai/sdk';
 const UNSPLASH = process.env.UNSPLASH_ACCESS_KEY;
 const PEXELS = process.env.PEXELS_API_KEY;
 const PIXABAY = process.env.PIXABAY_API_KEY;
-const VISION_MODEL = process.env.AGENT_MODEL ?? 'claude-sonnet-4-5-20250929';
+// Picking the best image is a simple visual judgment — Haiku handles it well
+// and is ~3-4x cheaper than Sonnet for these image-heavy calls.
+const VISION_MODEL = process.env.AGENT_VISION_MODEL ?? 'claude-haiku-4-5-20251001';
 
 /** A candidate image: a small `thumb` for the vision check, a larger `full` to embed. */
 export interface Candidate { thumb: string; full: string; source: string; }
@@ -146,6 +148,9 @@ export async function selectWithVision(
 ): Promise<Candidate | null> {
   const list = dedupe(candidates).slice(0, opts.max ?? 6);
   if (list.length === 0) return null;
+  // Nothing to choose: a required slot (cover) with one candidate keeps it
+  // anyway, so skip the vision call entirely (cost optimization).
+  if (list.length === 1 && opts.allowNone === false) return list[0];
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return list[0]; // can't verify offline; best effort
 
