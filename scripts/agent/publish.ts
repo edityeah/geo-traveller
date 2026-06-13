@@ -20,7 +20,7 @@ function richText(s: string) {
   return out;
 }
 
-function mdToBlocks(md: string): any[] {
+export function mdToBlocks(md: string): any[] {
   // Very small md → Notion block converter. Headings + paragraphs + lists +
   // bold/italic. Enough for what the LLM produces.
   const blocks: any[] = [];
@@ -158,7 +158,19 @@ function parseInline(text: string): any[] {
   return capped;
 }
 
-export async function publishToNotion(post: GeneratedPost, coverUrl?: string): Promise<{ pageId: string; url: string }> {
+export interface PublishMeta {
+  contentType?: 'Evergreen' | 'News';
+  topicKey?: string;
+  lastUpdated?: string;
+  qa?: 'Passed' | 'Flagged';
+  qaNotes?: string;
+}
+
+export async function publishToNotion(
+  post: GeneratedPost,
+  coverUrl?: string,
+  meta?: PublishMeta
+): Promise<{ pageId: string; url: string }> {
   const blocks = mdToBlocks(post.body);
 
   const properties: Record<string, any> = {
@@ -170,7 +182,12 @@ export async function publishToNotion(post: GeneratedPost, coverUrl?: string): P
     Excerpt: { rich_text: richText(post.excerpt) },
     // Source URL is only for the agent's de-dup tracking. Original URL is
     // reserved for the WP-migration use case (the actual old WordPress URL).
-    'Source URL': { url: post.sourceUrl },
+    'Source URL': { url: post.sourceUrl || null },
+    ...(meta?.contentType ? { 'Content Type': { select: { name: meta.contentType } } } : {}),
+    ...(meta?.topicKey ? { 'Topic Key': { rich_text: [{ type: 'text', text: { content: meta.topicKey } }] } } : {}),
+    ...(meta?.lastUpdated ? { 'Last Updated': { date: { start: meta.lastUpdated } } } : {}),
+    ...(meta?.qa ? { QA: { select: { name: meta.qa } } } : {}),
+    ...(meta?.qaNotes ? { 'QA Notes': { rich_text: [{ type: 'text', text: { content: meta.qaNotes.slice(0, 1900) } }] } } : {}),
   };
   if (post.locationName) {
     properties['Location Name'] = { rich_text: richText(post.locationName) };

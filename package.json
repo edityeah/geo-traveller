@@ -12,6 +12,7 @@
     "migrate": "tsx --env-file-if-exists=.env scripts/migrate-wp/migrate.ts",
     "agent": "tsx --env-file-if-exists=.env scripts/agent/run.ts",
     "agent:discover": "tsx --env-file-if-exists=.env scripts/agent/discover.ts",
+    "test": "node --import tsx --test scripts/agent/*.test.ts",
     "deploy": "npm run build && wrangler pages deploy dist --project-name=geo-traveller --branch=main",
     "preview": "astro preview",
     "astro": "astro",
