@@ -1,0 +1,26 @@
+name: Backfill comments (KV → Notion)
+
+# One-shot: mirror existing native comments from Cloudflare KV into the Notion
+# Comments database. Idempotent. Run after the Comments DB + secrets exist.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm install --no-save wrangler@4
+      - name: Backfill
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_COMMENTS_DB_ID: ${{ secrets.NOTION_COMMENTS_DB_ID }}
+        run: npx tsx scripts/backfill-comments-kv.ts
