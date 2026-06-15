@@ -1,0 +1,35 @@
+name: Remove a KV comment (moderation)
+
+# Delete a single native comment from Cloudflare KV by post slug + comment id.
+# Useful for removing spam without the admin token. (Notion is a mirror; remove
+# the matching row there separately if desired.)
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: 'Post slug (the part after /posts/)'
+        required: true
+      id:
+        description: 'Comment id to remove'
+        required: true
+
+jobs:
+  remove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: npm install --no-save wrangler@4
+      - name: Remove comment from KV thread
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SLUG: ${{ github.event.inputs.slug }}
+          CID: ${{ github.event.inputs.id }}
+        run: |
+          NSID=$(npx wrangler kv namespace list | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const n=JSON.parse(s).find(x=>/comment/i.test(x.title));console.log(n?n.id:"")})')
+          if [ -z "$NSID" ]; then echo "comments namespace not found"; exit 1; fi
+          KEY="thread:$SLUG"
+          npx wrangler kv key get "$KEY" --namespace-id "$NSID" --remote > /tmp/thread.json || { echo "thread not found"; exit 1; }
+          node -e 'const fs=require("fs");const a=JSON.parse(fs.readFileSync("/tmp/thread.json","utf8"));const out=a.filter(c=>c.id!==process.env.CID);fs.writeFileSync("/tmp/out.json",JSON.stringify(out));console.error(`removed ${a.length-out.length}, ${out.length} remain`)'
+          npx wrangler kv key put "$KEY" --namespace-id "$NSID" --remote --path /tmp/out.json
+          echo "done"
