@@ -1,0 +1,30 @@
+name: DNS audit (read-only)
+
+# Lists every DNS record in the geo-traveller.com zone so we can spot stray /
+# hijacked subdomains (e.g. demo, test) that are serving spam.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: List DNS records
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONE: geo-traveller.com
+        run: |
+          ZID=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones?name=$ZONE" | \
+            node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{console.log(JSON.parse(s).result?.[0]?.id||"")})')
+          echo "zone id: $ZID"
+          curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones/$ZID/dns_records?per_page=200" | \
+            node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
+              const j=JSON.parse(s);
+              for(const r of (j.result||[])){
+                console.log([r.type.padEnd(6), (r.proxied?"PROXIED":"dns").padEnd(8), r.name.padEnd(40), String(r.content).slice(0,60)].join("  "));
+              }
+              console.log("TOTAL", (j.result||[]).length);
+            })'
