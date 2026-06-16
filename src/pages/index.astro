@@ -83,8 +83,7 @@ const everythingElse = rest.filter((p) => !surfacedIds.has(p.id)).slice(0, 9);
       {everythingElse.length > 0 && (
         <section class="section">
           <header class="section-heading">
-            <h2>More from the archive</h2>
-            <a class="see-all" href="/archive/">Full archive →</a>
+            <h2>More stories</h2>
           </header>
           <div class="post-grid two-up">
             {everythingElse.slice(0, 6).map((post) => <PostCard post={post} />)}
