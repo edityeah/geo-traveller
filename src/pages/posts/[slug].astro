@@ -32,6 +32,26 @@ const description = post.data.excerpt || deriveDescription(post.body);
 const wordCount = countWords(post.body);
 const publishDate = post.data.originalDate ?? post.data.publishDate;
 
+// Breadcrumb category: use the post's primary tag (linked to its tag page)
+// instead of a blanket "Archive". Prefer a real section/place; fall back to the
+// first meaningful tag; only use Archive if the post has no tags at all.
+const tags = post.data.tags ?? [];
+const CATEGORY_PRIORITY = [
+  'Bhutan', 'Himachal Pradesh', 'Uttar Pradesh', 'Karnataka', 'India',
+  'Geo Daily', 'Flight', 'Festival', 'Visa', 'Food', 'Hotels',
+];
+const GENERIC_TAGS = new Set(['guide', 'how-to', 'travel']);
+function pickCategory(): { name: string; url: string } {
+  for (const c of CATEGORY_PRIORITY) {
+    const hit = tags.find((t) => t.toLowerCase() === c.toLowerCase());
+    if (hit) return { name: hit, url: `/tags/${tagSlug(hit)}/` };
+  }
+  const firstReal = tags.find((t) => !GENERIC_TAGS.has(t.toLowerCase())) ?? tags[0];
+  if (firstReal) return { name: firstReal, url: `/tags/${tagSlug(firstReal)}/` };
+  return { name: 'Archive', url: '/archive/' };
+}
+const category = pickCategory();
+
 const ld = [
   blogPostingLd({
     title: post.data.title,
@@ -46,7 +66,7 @@ const ld = [
   }),
   breadcrumbLd([
     { name: 'Home', url: '/' },
-    { name: 'Archive', url: '/archive/' },
+    category,
     { name: post.data.title, url: `/posts/${slug}/` },
   ]),
 ];
@@ -68,7 +88,7 @@ const ld = [
     <div class="main-col post-main">
       <Breadcrumbs crumbs={[
         { name: 'Home', url: '/' },
-        { name: 'Archive', url: '/archive/' },
+        category,
         { name: post.data.title },
       ]} />
       <header class="post-header">
