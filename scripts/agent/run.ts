@@ -85,27 +85,40 @@ async function main() {
   const counts = dayCounts(posts);
   console.log(`[agent] today: ${counts.evergreen} evergreen / ${counts.news} news`);
 
-  const category = chooseCategory(counts, { evergreen: EVERGREEN_PER_DAY, news: NEWS_PER_DAY });
-  if (!category) { console.log('[agent] daily quotas met — nothing to do.'); return; }
-  console.log(`[agent] category this run: ${category}`);
+  const TOTAL_PER_DAY = EVERGREEN_PER_DAY + NEWS_PER_DAY;
+  if (counts.evergreen + counts.news >= TOTAL_PER_DAY) {
+    console.log(`[agent] daily total (${TOTAL_PER_DAY}) reached — nothing to do.`);
+    return;
+  }
 
   const existingForLinks: ExistingPost[] = posts
     .filter((p) => p.status === 'Published' && p.title && p.slug)
     .map((p) => ({ title: p.title, slug: p.slug, tags: p.tags, excerpt: p.excerpt }));
 
-  if (category === 'evergreen') {
-    await doEvergreen(posts, existingForLinks);
-  } else {
-    await doNews(posts, existingForLinks);
+  // Prefer the under-quota category, but if it can't produce (evergreen backlog
+  // exhausted, or no fresh news), fall back to the other so the slot isn't
+  // wasted. This keeps the daily output near TOTAL_PER_DAY even when one stream
+  // is temporarily dry.
+  const preferred = chooseCategory(counts, { evergreen: EVERGREEN_PER_DAY, news: NEWS_PER_DAY }) ?? 'news';
+  const order: ('evergreen' | 'news')[] = preferred === 'evergreen' ? ['evergreen', 'news'] : ['news', 'evergreen'];
+  console.log(`[agent] preferred: ${preferred} (order: ${order.join(' → ')})`);
+
+  for (const cat of order) {
+    const produced = cat === 'evergreen'
+      ? await doEvergreen(posts, existingForLinks)
+      : await doNews(posts, existingForLinks);
+    if (produced) return;
+    console.log(`[agent] ${cat} produced nothing — trying fallback.`);
   }
+  console.log('[agent] nothing to produce this run (evergreen exhausted AND no fresh news).');
 }
 
-async function doEvergreen(posts: Awaited<ReturnType<typeof loadPosts>>, existing: ExistingPost[]) {
+async function doEvergreen(posts: Awaited<ReturnType<typeof loadPosts>>, existing: ExistingPost[]): Promise<boolean> {
   const covered = new Set(posts.map((p) => p.topicKey).filter(Boolean) as string[]);
   const signal = await topicSignals(seedTopics()).catch(() => new Map<string, number>());
   const ranked = rankTopicsBySignal(seedTopics(), signal);
   const topic = pickEvergreenTopic(ranked, covered);
-  if (!topic) { console.log('[agent] no uncovered evergreen topics left.'); return; }
+  if (!topic) { console.log('[agent] no uncovered evergreen topics left.'); return false; }
   console.log(`[agent] evergreen topic: ${topic.key} — ${topic.title}`);
 
   const post = await generateEvergreen(topic, existing);
@@ -125,19 +138,20 @@ async function doEvergreen(posts: Awaited<ReturnType<typeof loadPosts>>, existin
   const qa = await runQa({ title: post.title, body });
   console.log(`[agent] QA: ${qa.status} — ${qa.notes}`);
 
-  if (DRY) { console.log(`[DRY] would publish evergreen "${post.title}" (${body.length} chars)`); return; }
+  if (DRY) { console.log(`[DRY] would publish evergreen "${post.title}" (${body.length} chars)`); return true; }
   await publishToNotion(
     { ...post, slug, body, tags: dedupeTags([...post.tags]) },
     cover.url,
     { contentType: 'Evergreen', topicKey: topic.key, lastUpdated: todayUtc(), qa: qa.status, qaNotes: qa.notes }
   );
   console.log('[agent] evergreen draft created.');
+  return true;
 }
 
-async function doNews(posts: Awaited<ReturnType<typeof loadPosts>>, existing: ExistingPost[]) {
+async function doNews(posts: Awaited<ReturnType<typeof loadPosts>>, existing: ExistingPost[]): Promise<boolean> {
   const seen = await existingSourceUrls();
   const candidates = (await discover()).filter((c) => !seen.has(c.url));
-  if (!candidates.length) { console.log('[agent] no fresh news candidates.'); return; }
+  if (!candidates.length) { console.log('[agent] no fresh news candidates.'); return false; }
 
   const guides: GuideRef[] = posts
     .filter((p) => p.contentType === 'Evergreen' && p.topicKey && p.status === 'Published')
@@ -166,7 +180,7 @@ async function doNews(posts: Awaited<ReturnType<typeof loadPosts>>, existing: Ex
 
   if (DRY) {
     console.log(`[DRY] would publish news "${post.title}"${guide ? ` + refresh ${guide.key}` : ''}`);
-    return;
+    return true;
   }
 
   if (guide) {
@@ -200,6 +214,7 @@ async function doNews(posts: Awaited<ReturnType<typeof loadPosts>>, existing: Ex
     { contentType: 'News', topicKey: guide?.key, lastUpdated: todayUtc(), qa: qa.status, qaNotes: qa.notes }
   );
   console.log('[agent] news draft created.');
+  return true;
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
