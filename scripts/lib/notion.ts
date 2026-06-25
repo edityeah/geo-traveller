@@ -17,13 +17,24 @@ async function backoff<T>(fn: () => Promise<T>, attempt = 0): Promise<T> {
   try {
     return await fn();
   } catch (err: any) {
-    const status = err?.status ?? err?.code;
-    const retriable = status === 429 || status === 502 || status === 503 || status === 504;
-    if (!retriable || attempt >= 5) throw err;
-    const delay = Math.min(1000 * 2 ** attempt, 16000);
+    const status = typeof err?.status === 'number' ? err.status : undefined;
+    // Genuine client errors (bad token, not found, malformed request) won't
+    // succeed on retry — fail fast. Everything else is treated as transient:
+    // 429, all 5xx, AND thrown network errors that carry no HTTP status
+    // (ERR_STREAM_PREMATURE_CLOSE, ECONNRESET, ENOTFOUND, "fetch failed",
+    // socket hang up, timeouts) — these are the flaky-connection failures that
+    // were sinking the deploy/agent runs.
+    const isClientError = status !== undefined && status >= 400 && status < 500 && status !== 429;
+    if (isClientError || attempt >= 6) throw err;
+    const delay = Math.min(1000 * 2 ** attempt, 20000);
     await new Promise((r) => setTimeout(r, delay));
     return backoff(fn, attempt + 1);
   }
+}
+
+/** Resilient wrapper for any Notion READ call (retries transient network/5xx). */
+export async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+  return backoff(fn);
 }
 
 export async function fetchPublishedPosts(): Promise<PageObjectResponse[]> {

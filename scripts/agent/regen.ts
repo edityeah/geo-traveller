@@ -10,6 +10,7 @@ import { Client, isFullPage, isFullBlock } from '@notionhq/client';
 import type { Candidate } from './discover.js';
 import { generatePost, type ExistingPost } from './generate.js';
 import { resolveInlineImages, resolveCover } from './images.js';
+import { withRetry } from '../lib/notion.js';
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN! });
 const DB = process.env.NOTION_DATABASE_ID!;
@@ -22,12 +23,12 @@ async function fetchExistingPosts(): Promise<ExistingPost[]> {
   const out: ExistingPost[] = [];
   let cursor: string | undefined;
   do {
-    const r = await notion.databases.query({
+    const r = await withRetry(() => notion.databases.query({
       database_id: DB,
       start_cursor: cursor,
       page_size: 100,
       filter: { property: 'Status', select: { equals: 'Published' } },
-    });
+    }));
     for (const p of r.results) {
       if (!isFullPage(p)) continue;
       const props = p.properties as any;
@@ -51,7 +52,7 @@ async function deleteAllBlocks(pageId: string): Promise<void> {
   let cursor: string | undefined;
   const ids: string[] = [];
   do {
-    const r = await notion.blocks.children.list({ block_id: pageId, start_cursor: cursor, page_size: 100 });
+    const r = await withRetry(() => notion.blocks.children.list({ block_id: pageId, start_cursor: cursor, page_size: 100 }));
     for (const b of r.results) if (isFullBlock(b)) ids.push(b.id);
     cursor = r.has_more ? (r.next_cursor ?? undefined) : undefined;
   } while (cursor);

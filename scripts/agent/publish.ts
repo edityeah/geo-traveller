@@ -4,6 +4,7 @@
  */
 import { Client, isFullPage } from '@notionhq/client';
 import type { GeneratedPost } from './generate.js';
+import { withRetry } from '../lib/notion.js';
 
 const NOTION_TOKEN = process.env.NOTION_TOKEN!;
 const NOTION_DATABASE_ID = process.env.NOTION_DATABASE_ID!;
@@ -216,11 +217,11 @@ export async function existingSourceUrls(): Promise<Set<string>> {
   const set = new Set<string>();
   let cursor: string | undefined;
   do {
-    const res = await notion.databases.query({
+    const res = await withRetry(() => notion.databases.query({
       database_id: NOTION_DATABASE_ID,
       start_cursor: cursor,
       page_size: 100,
-    });
+    }));
     for (const p of res.results) {
       if (!isFullPage(p)) continue;
       const props = p.properties as any;

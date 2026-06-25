@@ -17,6 +17,7 @@ import { existingSourceUrls, publishToNotion, mdToBlocks } from './publish.js';
 import { seedTopics } from './topics.js';
 import { topicSignals, rankTopicsBySignal } from './keywords.js';
 import { chooseCategory, pickEvergreenTopic, type DayCounts } from './planner.js';
+import { withRetry } from '../lib/notion.js';
 import { matchGuide, refreshGuide, type GuideRef } from './refresh.js';
 import { runQa, deterministicChecks } from './qa.js';
 
@@ -42,7 +43,7 @@ async function loadPosts() {
     contentType?: string; topicKey?: string; createdDate?: string; pageId: string; status?: string; }[] = [];
   let cursor: string | undefined;
   do {
-    const res = await notion.databases.query({ database_id: DB, start_cursor: cursor, page_size: 100 });
+    const res = await withRetry(() => notion.databases.query({ database_id: DB, start_cursor: cursor, page_size: 100 }));
     for (const p of res.results) {
       if (!isFullPage(p)) continue;
       const pr = p.properties as any;
