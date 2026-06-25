@@ -10,7 +10,7 @@ const NOTION_TOKEN = process.env.NOTION_TOKEN!;
 const NOTION_DATABASE_ID = process.env.NOTION_DATABASE_ID!;
 
 const STATUS = (process.env.AGENT_STATUS ?? 'Draft') as 'Draft' | 'Published';
-const notion = new Client({ auth: NOTION_TOKEN });
+const notion = new Client({ auth: NOTION_TOKEN, fetch: globalThis.fetch });
 
 function richText(s: string) {
   // Notion caps at 2000 chars per text run.

@@ -12,7 +12,7 @@ import { generatePost, type ExistingPost } from './generate.js';
 import { resolveInlineImages, resolveCover } from './images.js';
 import { withRetry } from '../lib/notion.js';
 
-const notion = new Client({ auth: process.env.NOTION_TOKEN! });
+const notion = new Client({ auth: process.env.NOTION_TOKEN!, fetch: globalThis.fetch });
 const DB = process.env.NOTION_DATABASE_ID!;
 
 function plain(rich: any[] | undefined): string {

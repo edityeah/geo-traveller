@@ -62,7 +62,7 @@ export async function refreshGuide(args: {
   isoDate: string;
   buildBlocks: (md: string) => any[];
 }): Promise<void> {
-  const notion = new Client({ auth: process.env.NOTION_TOKEN! });
+  const notion = new Client({ auth: process.env.NOTION_TOKEN!, fetch: globalThis.fetch });
   const blocks = args.buildBlocks(args.newBodyMarkdown);
   if (!blocks.length) throw new Error('refresh produced no blocks; aborting to protect live guide');
 

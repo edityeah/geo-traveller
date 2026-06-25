@@ -25,7 +25,7 @@ const EVERGREEN_PER_DAY = Number(process.env.AGENT_EVERGREEN_PER_DAY ?? 5);
 const NEWS_PER_DAY = Number(process.env.AGENT_NEWS_PER_DAY ?? 7);
 const DRY = !!process.env.AGENT_DRY_RUN;
 
-const notion = new Client({ auth: process.env.NOTION_TOKEN! });
+const notion = new Client({ auth: process.env.NOTION_TOKEN!, fetch: globalThis.fetch });
 const DB = process.env.NOTION_DATABASE_ID!;
 
 function plain(rich: any[] | undefined): string {

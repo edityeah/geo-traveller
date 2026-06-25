@@ -11,7 +11,10 @@ const NOTION_PAGES_DATABASE_ID = process.env.NOTION_PAGES_DATABASE_ID;
 export const notionConfigured = Boolean(NOTION_TOKEN && NOTION_DATABASE_ID);
 export const pagesConfigured = Boolean(NOTION_TOKEN && NOTION_PAGES_DATABASE_ID);
 
-const client = NOTION_TOKEN ? new Client({ auth: NOTION_TOKEN }) : null;
+// Use Node's native fetch (undici) instead of the SDK's default node-fetch.
+// node-fetch intermittently throws ERR_STREAM_PREMATURE_CLOSE while gunzipping
+// large Notion responses over flaky CI connections, which was failing builds.
+const client = NOTION_TOKEN ? new Client({ auth: NOTION_TOKEN, fetch: globalThis.fetch }) : null;
 
 async function backoff<T>(fn: () => Promise<T>, attempt = 0): Promise<T> {
   try {
