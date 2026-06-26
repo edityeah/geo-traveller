@@ -24,13 +24,14 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const { Content, headings } = await render(post);
-const date = formatDate(post.data.publishDate);
 const mins = readMinutes(post);
 const slug = postSlug(post);
 const url = `${SITE.url}/posts/${slug}/`;
 const description = post.data.excerpt || deriveDescription(post.body);
 const wordCount = countWords(post.body);
 const publishDate = post.data.originalDate ?? post.data.publishDate;
+const displayDate = formatDate(publishDate);
+const isoDate = publishDate.toISOString();
 
 // Breadcrumb category: use the post's primary tag (linked to its tag page)
 // instead of a blanket "Archive". Prefer a real section/place; fall back to the
@@ -82,6 +83,7 @@ const ld = [
   articleTags={post.data.tags}
   articleAuthor={SITE.author.name}
   jsonLd={ld}
+  preloadImage={post.data.cover}
 >
   <ReadingProgress />
   <article class="with-sidebar">
@@ -93,17 +95,23 @@ const ld = [
       ]} />
       <header class="post-header">
         <div class="kicker">
-          {date}
+          {category.name}
           {post.data.locationName && ` · ${post.data.locationName}`}
-          {` · ${mins} min read`}
         </div>
         <h1>{post.data.title}</h1>
         {post.data.excerpt && <p class="lede">{post.data.excerpt}</p>}
+        <p class="post-dateline">
+          <span class="byline">By {SITE.author.name}</span>
+          <span aria-hidden="true">·</span>
+          <span>Published <time datetime={isoDate}>{displayDate}</time></span>
+          <span aria-hidden="true">·</span>
+          <span>{mins} min read</span>
+        </p>
       </header>
 
       {post.data.cover && (
         <div class="post-cover">
-          <img src={post.data.cover} alt={`Cover image — ${post.data.title}`} width="1200" height="675" loading="eager" />
+          <img src={post.data.cover} alt={`Cover image — ${post.data.title}`} width="1200" height="675" loading="eager" fetchpriority="high" decoding="async" />
         </div>
       )}
 
@@ -138,6 +146,23 @@ const ld = [
 </Base>
 
 <style>
+  .post-dateline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1.25rem 0 0;
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    color: var(--fg-soft);
+  }
+  .post-dateline .byline {
+    font-weight: 600;
+    color: var(--fg);
+  }
+  .post-dateline time {
+    color: inherit;
+  }
   .post-engagement {
     max-width: var(--measure);
     margin: 2.5rem auto 0;

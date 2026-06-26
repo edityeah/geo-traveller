@@ -17,6 +17,8 @@ interface Props {
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
   /** Hint to search engines. Default is index,follow. */
   noindex?: boolean;
+  /** URL of the LCP image to preload (e.g. the hero/cover). Speeds up LCP discovery. */
+  preloadImage?: string;
 }
 
 const {
@@ -30,6 +32,7 @@ const {
   articleAuthor,
   jsonLd,
   noindex,
+  preloadImage,
 } = Astro.props;
 const pageTitle = title ? `${title} — ${SITE.name}` : SITE.name;
 const siteDescription = description ?? SITE.description;
@@ -70,6 +73,9 @@ if (jsonLd) {
     {googleVerify && <meta name="google-site-verification" content={googleVerify} />}
     {bingVerify && <meta name="msvalidate.01" content={bingVerify} />}
     <link rel="canonical" href={canonical} />
+    {preloadImage && (
+      <link rel="preload" as="image" href={preloadImage} fetchpriority="high" />
+    )}
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/img/brand/logo-square.png" />
     <link rel="alternate" type="application/rss+xml" title={SITE.name} href="/rss.xml" />

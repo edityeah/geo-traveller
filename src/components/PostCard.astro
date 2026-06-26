@@ -17,7 +17,7 @@ const topTags = (post.data.tags ?? []).slice(0, 3);
 <article class="card">
   <a href={href} class="card-link">
     {post.data.cover ? (
-      <div class="cover"><img src={post.data.cover} alt={post.data.title} loading="lazy" /></div>
+      <div class="cover"><img src={post.data.cover} alt={post.data.title} width="1200" height="675" loading="lazy" decoding="async" /></div>
     ) : (
       <div class="cover placeholder" aria-hidden="true"></div>
     )}

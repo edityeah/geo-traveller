@@ -45,13 +45,13 @@ const surfacedIds = new Set(sections.flatMap((s) => s.posts.map((p) => p.id)));
 const everythingElse = rest.filter((p) => !surfacedIds.has(p.id)).slice(0, 9);
 ---
 
-<Base>
+<Base preloadImage={featured?.data.cover}>
   <div class="with-sidebar">
     <div class="main-col">
       {featured && (
         <a class="featured" href={postPath(featured)}>
           {featured.data.cover ? (
-            <div class="cover"><img src={featured.data.cover} alt={featured.data.title} /></div>
+            <div class="cover"><img src={featured.data.cover} alt={featured.data.title} width="1200" height="675" fetchpriority="high" decoding="async" /></div>
           ) : (
             <div class="cover placeholder" aria-hidden="true"></div>
           )}

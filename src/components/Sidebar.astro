@@ -91,7 +91,7 @@ const buttondownUser = import.meta.env.PUBLIC_BUTTONDOWN_USER;
         <li>
           <a href={postPath(post)}>
             {post.data.cover && (
-              <div class="sb-trending-thumb"><img src={post.data.cover} alt="" loading="lazy" /></div>
+              <div class="sb-trending-thumb"><img src={post.data.cover} alt="" width="160" height="160" loading="lazy" decoding="async" /></div>
             )}
             <div class="sb-trending-text">
               <h4>{post.data.title}</h4>
@@ -106,7 +106,9 @@ const buttondownUser = import.meta.env.PUBLIC_BUTTONDOWN_USER;
 
 <style>
   .sidebar {
-    font-family: var(--font-sans);
+    /* Match the site's default (serif) so sidebar prose reads consistently
+       with article text instead of looking like a different typeface. */
+    font-family: var(--font-serif);
   }
   .sb-block {
     margin-bottom: 2.5rem;
