@@ -150,37 +150,42 @@ export async function discover(): Promise<Candidate[]> {
  * (Olympics, FIFA, cricket), and India events (expos, concerts, festivals).
  * Grounded in real news so dates/booking details are accurate, not invented.
  */
+// Feeds likely to carry event announcements (tech keynotes, sport, culture).
+const EVENT_RSS_FEEDS = [
+  { name: 'The Verge', url: 'https://www.theverge.com/rss/index.xml' },
+  { name: 'TechCrunch', url: 'https://techcrunch.com/feed/' },
+  { name: 'ESPNcricinfo', url: 'https://www.espncricinfo.com/rss/content/story/feeds/0.xml' },
+  { name: 'Times of India Entertainment', url: 'https://timesofindia.indiatimes.com/rssfeeds/1081479906.cms' },
+];
+
+// Strong event signals only — named events + ticketed-event language. We avoid
+// vague verbs ("opens", "announces", "unveils") that pull in gossip / product
+// launches / match reports rather than attendable events.
+const EVENT_KEYWORDS = [
+  'keynote', 'wwdc', 'google i/o', 'meta connect', 'build 20', 'ignite',
+  ' ces ', 'mwc', 'devday', 'olympic', 'world cup', ' ipl ', 'fifa', 'asian games',
+  'film festival', 'music festival', 'lit fest', 'concert', 'live in concert', 'world tour',
+  'expo', ' summit', 'conference', 'tickets', 'ticket sales', 'lineup', 'line-up',
+  'comic con', 'coachella', 'gamescom', 'book tickets', 'on sale',
+];
+
+function isEventRelevant(text: string): boolean {
+  const t = ` ${text.toLowerCase()} `;
+  return EVENT_KEYWORDS.some((kw) => t.includes(kw));
+}
+
 export async function discoverEvents(): Promise<Candidate[]> {
-  if (!NEWSAPI_KEY) {
-    console.log('[discover] no NEWSAPI_KEY — skipping events');
-    return [];
-  }
-  // Event-name driven (these terms ARE events). We deliberately do NOT also
-  // require a "tickets/booking" word — that combination almost never co-occurs
-  // in a headline, so it returned nothing. The booking/how-to-watch angle is
-  // handled in the writing prompt, not the discovery filter.
-  const q =
-    'WWDC OR "Apple event" OR "Google I/O" OR "Meta Connect" OR "Microsoft Build" OR "Microsoft Ignite" OR ' +
-    'CES OR "Mobile World Congress" OR "OpenAI DevDay" OR keynote OR Olympics OR "Cricket World Cup" OR IPL OR ' +
-    '"FIFA World Cup" OR Coachella OR "Comic Con" OR "music festival" OR "tech summit" OR "trade expo" OR "ticket sales"';
-  const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(q)}&language=en&sortBy=publishedAt&pageSize=40`;
-  let data: any;
-  try {
-    const r = await fetch(url, { headers: { 'X-Api-Key': NEWSAPI_KEY } });
-    if (!r.ok) { console.warn(`[discover] events NewsAPI ${r.status}`); return []; }
-    data = await r.json();
-  } catch { return []; }
-  const list: Candidate[] = (data.articles ?? []).map((a: any) => ({
-    title: (a.title ?? '').replace(/\s+\-\s+[^-]+$/, '').trim(),
-    summary: a.description ?? '',
-    url: a.url,
-    source: a.source?.name ?? 'NewsAPI',
-    imageUrl: a.urlToImage ?? undefined,
-    publishedAt: a.publishedAt,
-  })).filter((c: Candidate) => c.title && c.url);
-  // De-dupe by URL, newest first.
+  // Driven by RSS (like news) so it works without a NewsAPI key; NewsAPI is a
+  // bonus when a key is present. The booking/how-to-watch angle is handled in
+  // the writing prompt, not the discovery filter.
+  const buckets = await Promise.all(
+    EVENT_RSS_FEEDS.map((f) => fetchRss(f.url, f.name).catch(() => []))
+  );
   const seen = new Map<string, Candidate>();
-  for (const c of list) if (!seen.has(c.url)) seen.set(c.url, c);
+  for (const c of buckets.flat()) {
+    if (!c.url || seen.has(c.url)) continue;
+    if (isEventRelevant(`${c.title} ${c.summary}`)) seen.set(c.url, c);
+  }
   return [...seen.values()].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
 }
 
