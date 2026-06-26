@@ -160,7 +160,7 @@ function parseInline(text: string): any[] {
 }
 
 export interface PublishMeta {
-  contentType?: 'Evergreen' | 'News';
+  contentType?: 'Evergreen' | 'News' | 'Events';
   topicKey?: string;
   lastUpdated?: string;
   qa?: 'Passed' | 'Flagged';

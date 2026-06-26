@@ -216,3 +216,62 @@ Use the publish_post tool. Set tags to include the relevant ones above (do NOT i
   const input = toolUse.input as Omit<GeneratedPost, 'sourceUrl' | 'sourceName'>;
   return { ...input, sourceUrl: '', sourceName: '' };
 }
+
+const SYSTEM_EVENT = `You write event coverage for Geo-Traveller — notable events worth attending, watching, or booking: tech keynotes (Apple, Google, Meta, Microsoft, OpenAI), global sport (Olympics, FIFA, cricket/IPL), concerts, expos, and India events. Voice: clear, useful, grounded — not hype.
+
+You are given a real news source about an event. Write a reader-useful post centered on HOW TO ENGAGE with it:
+
+1. Lead with what the event is and why it matters, in plain language.
+2. Cover the practical details that a reader needs: dates, location/venue (or "online"), and — most importantly — HOW TO BOOK, REGISTER, WATCH, or ATTEND (ticket sales, registration, livestream/where to stream, official site).
+3. Add useful context: who it's for, what to expect, prior editions, India relevance if any.
+4. Short paragraphs, ## and ### headings, lists where they help. 450-750 words.
+
+ACCURACY IS CRITICAL:
+- Use ONLY facts present in the source. Do NOT invent dates, ticket prices, venues, or links.
+- If a specific date/price isn't in the source, say "as announced" or "check the official site" and LINK the official site rather than guessing.
+- No "Source:" line.
+
+REQUIRED inline links and images (same rules as other posts):
+A. ENTITY LINKS: hyperlink the organizer / official event site / ticketing or streaming platform (the booking path) and key proper nouns. 4-8 links.
+B. INTERNAL BACKLINKS: link to related Geo-Traveller posts by slug, [text](/posts/SLUG/). 1-3 when relevant.
+C. INLINE IMAGES: 2-4 ![alt](query:concrete photographable subject) — a real scene/object (stadium, conference stage, concert crowd, city venue). Never abstract.
+
+Output via the publish_post tool.`;
+
+/** Generate an event post grounded in a discovered news source. */
+export async function generateEvent(
+  candidate: Candidate,
+  existingPosts: ExistingPost[] = []
+): Promise<GeneratedPost> {
+  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+
+  const postList = existingPosts.length
+    ? existingPosts.slice(0, 20).map((p) => `- ${p.title} — slug: ${p.slug}`).join('\n')
+    : '(none yet)';
+
+  const userPrompt = `Event to cover (grounded in this source — do not invent details beyond it):
+
+Headline: ${candidate.title}
+Source: ${candidate.source}
+Source URL: ${candidate.url}
+Summary: ${candidate.summary}
+
+Existing Geo-Traveller posts you can backlink to inline when relevant (use the slug):
+
+${postList}
+
+Write the event post. Use the publish_post tool. Tags MUST include "Events" plus topical tags (e.g. Tech, Sports, Cricket, Music, India, Olympics). coverQuery should describe a fitting concrete photo subject.`;
+
+  const res = await client.messages.create({
+    model: MODEL,
+    max_tokens: 4000,
+    system: SYSTEM_EVENT,
+    tools: [TOOL as any],
+    tool_choice: { type: 'tool', name: 'publish_post' },
+    messages: [{ role: 'user', content: userPrompt }],
+  });
+  const toolUse = res.content.find((c: any) => c.type === 'tool_use');
+  if (!toolUse || toolUse.type !== 'tool_use') throw new Error('Claude did not return a tool_use block');
+  const input = toolUse.input as Omit<GeneratedPost, 'sourceUrl' | 'sourceName'>;
+  return { ...input, sourceUrl: candidate.url, sourceName: candidate.source };
+}

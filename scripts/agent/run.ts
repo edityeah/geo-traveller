@@ -10,8 +10,8 @@
  * Env: AGENT_EVERGREEN_PER_DAY (5), AGENT_NEWS_PER_DAY (7), AGENT_DRY_RUN.
  */
 import { Client, isFullPage } from '@notionhq/client';
-import { discover } from './discover.js';
-import { generatePost, generateEvergreen, type ExistingPost } from './generate.js';
+import { discover, discoverEvents } from './discover.js';
+import { generatePost, generateEvergreen, generateEvent, type ExistingPost } from './generate.js';
 import { resolveCover, resolveInlineImages } from './images.js';
 import { existingSourceUrls, publishToNotion, mdToBlocks } from './publish.js';
 import { seedTopics } from './topics.js';
@@ -23,6 +23,7 @@ import { runQa, deterministicChecks } from './qa.js';
 
 const EVERGREEN_PER_DAY = Number(process.env.AGENT_EVERGREEN_PER_DAY ?? 5);
 const NEWS_PER_DAY = Number(process.env.AGENT_NEWS_PER_DAY ?? 7);
+const EVENTS_PER_DAY = Number(process.env.AGENT_EVENTS_PER_DAY ?? 5);
 const DRY = !!process.env.AGENT_DRY_RUN;
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN!, fetch: globalThis.fetch });
@@ -66,13 +67,14 @@ async function loadPosts() {
 
 function dayCounts(posts: Awaited<ReturnType<typeof loadPosts>>): DayCounts {
   const today = todayUtc();
-  let evergreen = 0, news = 0;
+  let evergreen = 0, news = 0, events = 0;
   for (const p of posts) {
     if (p.createdDate?.slice(0, 10) !== today) continue;
     if (p.contentType === 'Evergreen') evergreen++;
     else if (p.contentType === 'News') news++;
+    else if (p.contentType === 'Events') events++;
   }
-  return { evergreen, news };
+  return { evergreen, news, events };
 }
 
 function dedupeTags(tags: string[]): string[] {
@@ -84,10 +86,11 @@ function dedupeTags(tags: string[]): string[] {
 async function main() {
   const posts = await loadPosts();
   const counts = dayCounts(posts);
-  console.log(`[agent] today: ${counts.evergreen} evergreen / ${counts.news} news`);
+  const quota = { evergreen: EVERGREEN_PER_DAY, news: NEWS_PER_DAY, events: EVENTS_PER_DAY };
+  console.log(`[agent] today: ${counts.evergreen} evergreen / ${counts.news} news / ${counts.events} events`);
 
-  const TOTAL_PER_DAY = EVERGREEN_PER_DAY + NEWS_PER_DAY;
-  if (counts.evergreen + counts.news >= TOTAL_PER_DAY) {
+  const TOTAL_PER_DAY = EVERGREEN_PER_DAY + NEWS_PER_DAY + EVENTS_PER_DAY;
+  if (counts.evergreen + counts.news + counts.events >= TOTAL_PER_DAY) {
     console.log(`[agent] daily total (${TOTAL_PER_DAY}) reached — nothing to do.`);
     return;
   }
@@ -96,22 +99,24 @@ async function main() {
     .filter((p) => p.status === 'Published' && p.title && p.slug)
     .map((p) => ({ title: p.title, slug: p.slug, tags: p.tags, excerpt: p.excerpt }));
 
-  // Prefer the under-quota category, but if it can't produce (evergreen backlog
-  // exhausted, or no fresh news), fall back to the other so the slot isn't
-  // wasted. This keeps the daily output near TOTAL_PER_DAY even when one stream
-  // is temporarily dry.
-  const preferred = chooseCategory(counts, { evergreen: EVERGREEN_PER_DAY, news: NEWS_PER_DAY }) ?? 'news';
-  const order: ('evergreen' | 'news')[] = preferred === 'evergreen' ? ['evergreen', 'news'] : ['news', 'evergreen'];
+  // Prefer the under-quota category, but if it can't produce (e.g. evergreen
+  // backlog exhausted, or no fresh news/events), fall back to the others so the
+  // slot isn't wasted — keeps daily output near TOTAL_PER_DAY when a stream is dry.
+  const preferred = chooseCategory(counts, quota) ?? 'news';
+  const ALL: ('evergreen' | 'news' | 'events')[] = ['evergreen', 'news', 'events'];
+  const order = [preferred, ...ALL.filter((c) => c !== preferred)];
   console.log(`[agent] preferred: ${preferred} (order: ${order.join(' → ')})`);
 
+  const run = {
+    evergreen: () => doEvergreen(posts, existingForLinks),
+    news: () => doNews(posts, existingForLinks),
+    events: () => doEvents(posts, existingForLinks),
+  };
   for (const cat of order) {
-    const produced = cat === 'evergreen'
-      ? await doEvergreen(posts, existingForLinks)
-      : await doNews(posts, existingForLinks);
-    if (produced) return;
+    if (await run[cat]()) return;
     console.log(`[agent] ${cat} produced nothing — trying fallback.`);
   }
-  console.log('[agent] nothing to produce this run (evergreen exhausted AND no fresh news).');
+  console.log('[agent] nothing to produce this run (all streams dry).');
 }
 
 async function doEvergreen(posts: Awaited<ReturnType<typeof loadPosts>>, existing: ExistingPost[]): Promise<boolean> {
@@ -215,6 +220,38 @@ async function doNews(posts: Awaited<ReturnType<typeof loadPosts>>, existing: Ex
     { contentType: 'News', topicKey: guide?.key, lastUpdated: todayUtc(), qa: qa.status, qaNotes: qa.notes }
   );
   console.log('[agent] news draft created.');
+  return true;
+}
+
+async function doEvents(posts: Awaited<ReturnType<typeof loadPosts>>, existing: ExistingPost[]): Promise<boolean> {
+  const seen = await existingSourceUrls();
+  const candidates = (await discoverEvents()).filter((c) => !seen.has(c.url));
+  if (!candidates.length) { console.log('[agent] no fresh event candidates.'); return false; }
+
+  const candidate = candidates[0];
+  console.log(`[agent] event: ${candidate.title}`);
+
+  const post = await generateEvent(candidate, existing);
+  const requested = (post.body.match(/\]\(query:/g) ?? []).length;
+  const body = await resolveInlineImages(post.body);
+  const kept = (body.match(/!\[[^\]]*\]\(https?:\/\//g) ?? []).length;
+  console.log(`[agent] inline images: ${requested} requested → ${kept} kept`);
+  const slug = (post.slug || slugify(post.title)).replace(/[^a-z0-9-]/g, '');
+  const cover = await resolveCover({
+    type: 'news', title: post.title, unsplashQuery: post.coverQuery, candidateImageUrl: candidate.imageUrl,
+    candidateUrl: candidate.url, fallbackQueries: [post.locationName, post.tags[0]].filter(Boolean) as string[],
+  });
+  console.log(`[agent] cover: ${cover.source}`);
+  const qa = await runQa({ title: post.title, body, sourceSummary: candidate.summary });
+  console.log(`[agent] QA: ${qa.status} — ${qa.notes}`);
+
+  if (DRY) { console.log(`[DRY] would publish event "${post.title}"`); return true; }
+  await publishToNotion(
+    { ...post, slug, body, tags: dedupeTags([...post.tags, 'Events']) },
+    cover.url,
+    { contentType: 'Events', lastUpdated: todayUtc(), qa: qa.status, qaNotes: qa.notes }
+  );
+  console.log('[agent] event draft created.');
   return true;
 }
 

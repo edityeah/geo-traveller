@@ -144,6 +144,42 @@ export async function discover(): Promise<Candidate[]> {
   return filtered;
 }
 
+/**
+ * Discover notable EVENTS worth a "what it is / when / how to book or watch"
+ * post — tech keynotes (Apple, Google, Meta, Microsoft, OpenAI), global sport
+ * (Olympics, FIFA, cricket), and India events (expos, concerts, festivals).
+ * Grounded in real news so dates/booking details are accurate, not invented.
+ */
+export async function discoverEvents(): Promise<Candidate[]> {
+  if (!NEWSAPI_KEY) {
+    console.log('[discover] no NEWSAPI_KEY — skipping events');
+    return [];
+  }
+  const q =
+    '(Apple event OR "Google I/O" OR "Meta Connect" OR "Microsoft Build" OR CES OR MWC OR OpenAI OR keynote OR ' +
+    'Olympics OR "Cricket World Cup" OR IPL OR FIFA OR concert OR tour OR expo OR summit OR conference) AND ' +
+    '(tickets OR booking OR schedule OR dates OR register OR registration OR livestream OR "how to watch" OR lineup OR venue)';
+  const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(q)}&language=en&sortBy=publishedAt&pageSize=40`;
+  let data: any;
+  try {
+    const r = await fetch(url, { headers: { 'X-Api-Key': NEWSAPI_KEY } });
+    if (!r.ok) { console.warn(`[discover] events NewsAPI ${r.status}`); return []; }
+    data = await r.json();
+  } catch { return []; }
+  const list: Candidate[] = (data.articles ?? []).map((a: any) => ({
+    title: (a.title ?? '').replace(/\s+\-\s+[^-]+$/, '').trim(),
+    summary: a.description ?? '',
+    url: a.url,
+    source: a.source?.name ?? 'NewsAPI',
+    imageUrl: a.urlToImage ?? undefined,
+    publishedAt: a.publishedAt,
+  })).filter((c: Candidate) => c.title && c.url);
+  // De-dupe by URL, newest first.
+  const seen = new Map<string, Candidate>();
+  for (const c of list) if (!seen.has(c.url)) seen.set(c.url, c);
+  return [...seen.values()].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+}
+
 if (process.argv[1]?.endsWith('discover.ts')) {
   discover().then((list) => {
     console.log(`Found ${list.length} candidates`);

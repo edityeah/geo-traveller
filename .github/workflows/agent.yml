@@ -1,10 +1,12 @@
 name: Trending-topic blog agent
 
 on:
-  # Every 2 hours → 12 runs/day, one post each (mix decided from Notion state:
-  # ~5 evergreen / 7 news per day, configurable via env below).
+  # Hourly → up to 24 run-slots/day, one post each. The planner caps daily
+  # output at ~17 (5 evergreen / 7 news / 5 events) from Notion state; extra
+  # slots no-op. Hourly gives enough headroom to hit 17 despite GitHub's
+  # scheduled-cron delays/skips.
   schedule:
-    - cron: '0 */2 * * *'
+    - cron: '0 * * * *'
   workflow_dispatch:
     inputs:
       regen_page_id:
