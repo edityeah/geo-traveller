@@ -155,10 +155,14 @@ export async function discoverEvents(): Promise<Candidate[]> {
     console.log('[discover] no NEWSAPI_KEY — skipping events');
     return [];
   }
+  // Event-name driven (these terms ARE events). We deliberately do NOT also
+  // require a "tickets/booking" word — that combination almost never co-occurs
+  // in a headline, so it returned nothing. The booking/how-to-watch angle is
+  // handled in the writing prompt, not the discovery filter.
   const q =
-    '(Apple event OR "Google I/O" OR "Meta Connect" OR "Microsoft Build" OR CES OR MWC OR OpenAI OR keynote OR ' +
-    'Olympics OR "Cricket World Cup" OR IPL OR FIFA OR concert OR tour OR expo OR summit OR conference) AND ' +
-    '(tickets OR booking OR schedule OR dates OR register OR registration OR livestream OR "how to watch" OR lineup OR venue)';
+    'WWDC OR "Apple event" OR "Google I/O" OR "Meta Connect" OR "Microsoft Build" OR "Microsoft Ignite" OR ' +
+    'CES OR "Mobile World Congress" OR "OpenAI DevDay" OR keynote OR Olympics OR "Cricket World Cup" OR IPL OR ' +
+    '"FIFA World Cup" OR Coachella OR "Comic Con" OR "music festival" OR "tech summit" OR "trade expo" OR "ticket sales"';
   const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(q)}&language=en&sortBy=publishedAt&pageSize=40`;
   let data: any;
   try {
