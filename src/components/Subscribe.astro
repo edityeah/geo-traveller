@@ -1,0 +1,191 @@
+---
+// Subscribe form → /api/subscribe (Cloudflare Pages Function → Notion + welcome
+// email via Resend). Two looks via `variant`:
+//   sidebar — compact block for the right rail
+//   banner  — wide dark band for in-article placement
+interface Props {
+  variant?: 'sidebar' | 'banner';
+}
+const { variant = 'sidebar' } = Astro.props;
+const heading = variant === 'banner'
+  ? 'Get the best of The Geo Traveller'
+  : 'Subscribe';
+const blurb = variant === 'banner'
+  ? 'Travel, flights, food, experiences and guides — in your inbox. No spam, unsubscribe anytime.'
+  : 'New stories on travel, food and experiences — straight to your inbox.';
+---
+
+<section class={`subscribe subscribe--${variant}`}>
+  {variant === 'sidebar' && <h3 class="sb-title">{heading}</h3>}
+  {variant === 'banner' && <h2 class="subscribe-title">{heading}</h2>}
+  <p class="subscribe-blurb">{blurb}</p>
+
+  <form class="subscribe-form" novalidate>
+    <input type="hidden" name="source" value={variant} />
+    <input class="sub-name" type="text" name="name" placeholder="First name (optional)" autocomplete="given-name" maxlength="100" />
+    <input class="sub-email" type="email" name="email" placeholder="you@example.com" autocomplete="email" required maxlength="200" />
+    <!-- Honeypot: hidden from humans, bots fill it. -->
+    <span class="sub-hp" aria-hidden="true"><label>Leave empty<input type="text" name="hp" tabindex="-1" autocomplete="off" /></label></span>
+    <button type="submit">Subscribe</button>
+    <p class="sub-status" role="status" aria-live="polite"></p>
+  </form>
+</section>
+
+<script>
+  // Binds every subscribe form on the page (sidebar + banner can coexist).
+  document.querySelectorAll<HTMLFormElement>('.subscribe-form').forEach((form) => {
+    const status = form.querySelector('.sub-status') as HTMLElement;
+    const button = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.textContent = '';
+      status.className = 'sub-status';
+
+      const data = Object.fromEntries(new FormData(form).entries());
+      if (!data.email) {
+        status.textContent = 'Please enter your email.';
+        status.classList.add('is-error');
+        return;
+      }
+
+      button.disabled = true;
+      const original = button.textContent;
+      button.textContent = 'Subscribing…';
+
+      try {
+        const res = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok) {
+          form.reset();
+          status.textContent = json.already
+            ? 'You’re already subscribed — thanks!'
+            : 'You’re in! Check your inbox for a welcome note.';
+          status.classList.add('is-success');
+        } else {
+          status.textContent = json.error || 'Something went wrong. Please try again.';
+          status.classList.add('is-error');
+        }
+      } catch {
+        status.textContent = 'Network error. Please try again.';
+        status.classList.add('is-error');
+      } finally {
+        button.disabled = false;
+        button.textContent = original;
+      }
+    });
+  });
+</script>
+
+<style>
+  .subscribe-form { font-family: var(--font-sans); }
+  .sub-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .subscribe-blurb { font-family: var(--font-sans); }
+  .sub-status { margin: 0.5rem 0 0; font-size: 0.85rem; min-height: 1.1em; }
+  .sub-status.is-success { color: var(--accent-deep); }
+  .sub-status.is-error { color: #b3261e; }
+
+  /* ── Sidebar variant ── */
+  .subscribe--sidebar { margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--rule); }
+  .subscribe--sidebar .subscribe-blurb {
+    font-size: 0.85rem;
+    color: var(--fg-soft);
+    line-height: 1.5;
+    margin: 0 0 1rem;
+  }
+  .subscribe--sidebar .subscribe-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .subscribe--sidebar input[type="text"],
+  .subscribe--sidebar input[type="email"] {
+    padding: 0.55rem 0.85rem;
+    border: 1px solid var(--rule-strong);
+    border-radius: 999px;
+    background: var(--bg-warm);
+    color: var(--fg);
+    font: inherit;
+    font-size: 0.875rem;
+  }
+  .subscribe--sidebar input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .subscribe--sidebar button {
+    padding: 0.6rem 1rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .subscribe--sidebar button:hover { background: var(--accent-deep); }
+  .subscribe--sidebar button:disabled { opacity: 0.6; cursor: default; }
+
+  /* ── Banner variant (in-article) ── */
+  .subscribe--banner {
+    max-width: var(--measure);
+    margin: 3rem auto 0;
+    background: var(--fg);
+    border-radius: 14px;
+    padding: 1.75rem 1.9rem;
+    text-align: center;
+  }
+  .subscribe--banner .subscribe-title {
+    font-family: var(--font-serif);
+    color: #fff;
+    font-size: 1.5rem;
+    margin: 0 0 0.5rem;
+    line-height: 1.2;
+  }
+  .subscribe--banner .subscribe-blurb {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0 auto 1.25rem;
+    max-width: 34rem;
+  }
+  .subscribe--banner .subscribe-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+  }
+  .subscribe--banner input[type="text"],
+  .subscribe--banner input[type="email"] {
+    flex: 1 1 14rem;
+    min-width: 0;
+    padding: 0.7rem 1rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #2b2b2b;
+    font: inherit;
+    font-size: 0.95rem;
+  }
+  .subscribe--banner input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .subscribe--banner button {
+    flex: 0 0 auto;
+    padding: 0.7rem 1.6rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .subscribe--banner button:hover { background: var(--accent-deep); }
+  .subscribe--banner button:disabled { opacity: 0.6; cursor: default; }
+  .subscribe--banner .sub-status { color: #fff; width: 100%; }
+  .subscribe--banner .sub-status.is-success { color: #ffd9c9; }
+  .subscribe--banner .sub-status.is-error { color: #ffb4ad; }
+</style>
