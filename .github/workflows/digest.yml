@@ -1,0 +1,40 @@
+name: Weekly subscriber digest
+
+on:
+  # Saturday 05:30 UTC = 11:00 IST. GitHub cron can lag a few minutes — fine
+  # for a weekly roundup. Skips automatically if no posts went up that week.
+  schedule:
+    - cron: '30 5 * * 6'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Set to "1" to log recipients without sending'
+        required: false
+        default: ''
+
+concurrency:
+  group: digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Send the weekly digest
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          NOTION_SUBSCRIBERS_DB_ID: ${{ secrets.NOTION_SUBSCRIBERS_DB_ID }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          UNSUB_SECRET: ${{ secrets.UNSUB_SECRET }}
+          SITE_URL: https://geo-traveller.com
+          DIGEST_DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: npx tsx scripts/digest/send.ts

@@ -59,3 +59,30 @@ Properties: `Name` (Title), `Email` (Email), `Subscribed` (Date),
 - Preview: sidebar block renders below About (homepage + post), banner renders
   above "More stories like this" on a post; submit shows graceful "not configured"
   until the DB id secret is set; no console errors; multiple forms on one page work.
+
+## Addendum (2026-06-27) — unsubscribe + weekly digest
+
+User: emails must carry an unsubscribe option, and instead of per-post spam the
+list gets a weekly roundup every Saturday ~11:00 IST. State the cadence in the
+welcome email and the on-site subscribe block.
+
+- **Unsubscribe**: `functions/api/unsubscribe.ts` (GET + POST). Links are signed
+  with HMAC-SHA256 over the subscriber's Notion page id (opaque — no email in the
+  URL) using `UNSUB_SECRET`. Sets `Status=Unsubscribed` (+ optional `Unsubscribed`
+  date, retried without it if the property is absent). GET returns a styled
+  confirmation page; POST handles `List-Unsubscribe-Post` one-click.
+- Welcome email + digest add `List-Unsubscribe` / `List-Unsubscribe-Post` headers
+  → native one-click unsubscribe in Gmail/Apple Mail.
+- **Weekly digest**: `scripts/digest/send.ts` + `.github/workflows/digest.yml`
+  (cron `30 5 * * 6` = Sat 11:00 IST). Queries Posts with Status=Published and
+  Publish Date within 7 days; emails each Active subscriber a roundup via Resend;
+  skips if there are no new posts. `npm run digest` for local/dispatch; dispatch
+  input `dry_run=1` logs recipients without sending.
+- `UNSUB_SECRET`: random hex, set as a GitHub secret + pushed to Pages via
+  set-pages-secrets. The function (Web Crypto) and digest (node:crypto) compute
+  the same HMAC-SHA256 hex, so links verify across both.
+- Copy: welcome email + subscribe block state "one weekly email, Saturday
+  mornings" + unsubscribe.
+
+Note: "published this week" = Status=Published AND Publish Date within 7 days —
+accurate as long as posts are published close to their date.
