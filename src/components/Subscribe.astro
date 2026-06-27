@@ -64,7 +64,9 @@ const blurb = variant === 'banner'
           form.reset();
           status.textContent = json.already
             ? 'You’re already subscribed — thanks!'
-            : 'You’re in! Check your inbox for a welcome note.';
+            : json.reactivated
+              ? 'Welcome back! You’re re-subscribed — check your inbox.'
+              : 'You’re in! Check your inbox for a welcome note.';
           status.classList.add('is-success');
         } else {
           status.textContent = json.error || 'Something went wrong. Please try again.';
