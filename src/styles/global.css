@@ -265,12 +265,28 @@ a.featured {
 }
 a.featured:hover { color: inherit; }
 .featured .cover {
+  position: relative;
   aspect-ratio: 16 / 9;
   overflow: hidden;
+  border-radius: 12px;
   background: var(--bg-warm);
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.featured-badge {
+  position: absolute;
+  top: 0.85rem;
+  left: 0.85rem;
+  z-index: 1;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.34rem 0.7rem;
+  border-radius: 4px;
+  line-height: 1;
 }
 .featured .cover img {
   object-fit: contain !important;
@@ -360,10 +376,18 @@ a.featured:hover .read-more { color: var(--accent-deep); }
 .post-grid.two-up {
   grid-template-columns: repeat(2, 1fr);
 }
+/* Magazine grid: as many columns as fit (2 in the main column beside the
+   sidebar, more on wide viewports), 1 on phones. Tighter gaps than the
+   default grid so the cards read as a dense feed. */
+.post-grid.auto {
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 2.25rem 1.75rem;
+}
 @media (max-width: 900px) { .post-grid.three-up { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 600px) {
   .post-grid.three-up,
-  .post-grid.two-up { grid-template-columns: 1fr; }
+  .post-grid.two-up,
+  .post-grid.auto { grid-template-columns: 1fr; }
 }
 
 .card { container-type: inline-size; }

@@ -1,0 +1,65 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getAllPosts } from '../../lib/posts';
+import { CATEGORIES, categoryByKey, postsInCategory } from '../../lib/categories';
+
+export async function getStaticPaths() {
+  const all = await getAllPosts();
+  // Generate a page for every category (even empty ones) so nav links never
+  // 404 — empty categories render a friendly empty state.
+  return CATEGORIES.map((cat) => ({
+    params: { category: cat.key },
+    props: { categoryKey: cat.key, posts: postsInCategory(all, cat.key) },
+  }));
+}
+
+const { categoryKey, posts } = Astro.props;
+const category = categoryByKey(categoryKey)!;
+---
+
+<Base title={category.label} description={`The latest ${category.label} stories from The Geo Traveller.`}>
+  <header class="cat-header">
+    <span class="cat-badge" style={`background:${category.badge.bg};color:${category.badge.fg}`}>{category.label}</span>
+    <p class="cat-count">{posts.length} {posts.length === 1 ? 'story' : 'stories'}</p>
+  </header>
+
+  {posts.length > 0 ? (
+    <section class="post-grid auto" style="margin-top: 2.5rem;">
+      {posts.map((post) => <PostCard post={post} />)}
+    </section>
+  ) : (
+    <p class="cat-empty">No {category.label.toLowerCase()} stories yet — check back soon.</p>
+  )}
+</Base>
+
+<style>
+  .cat-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 2px solid var(--fg);
+    padding-bottom: 1rem;
+  }
+  .cat-badge {
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    line-height: 1;
+  }
+  .cat-count {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin: 0;
+  }
+  .cat-empty {
+    margin-top: 2.5rem;
+    color: var(--fg-soft);
+    font-size: 1.05rem;
+  }
+</style>

@@ -2,47 +2,30 @@
 import Base from '../layouts/Base.astro';
 import PostCard from '../components/PostCard.astro';
 import Sidebar from '../components/Sidebar.astro';
-import { getAllPosts, postPath, readMinutes, formatDate, tagSlug, type Post } from '../lib/posts';
+import { getAllPosts, postPath, readMinutes, formatDate } from '../lib/posts';
+import { CATEGORIES, categoryOf } from '../lib/categories';
 
 const posts = await getAllPosts();
 // The featured slot is for long-form / destination posts only. News items
 // tagged "Geo Daily" are excluded — they cycle through too fast and dilute
 // what the homepage is meant to showcase.
 const featuredEligible = posts.filter(
-  (p) => !(p.data.tags ?? []).some((t) => t.toLowerCase() === 'geo daily' || t.toLowerCase() === 'geo-daily')
+  (p) => categoryOf(p).key !== 'news'
 );
-const featured = featuredEligible[0];
+const featured = featuredEligible[0] ?? posts[0];
 const rest = posts.filter((p) => p.id !== featured?.id);
+const featuredCat = featured ? categoryOf(featured) : null;
 const featuredDate = featured ? formatDate(featured.data.publishDate) : '';
 const featuredMins = featured ? readMinutes(featured) : 0;
 
-// Build category sections. Each is a tag name that surfaces as a section.
-// Order matters — top = most prominent.
-const CATEGORY_ORDER: { label: string; tag: string }[] = [
-  { label: 'Geo Daily', tag: 'Geo Daily' },
-  { label: 'India', tag: 'India' },
-  { label: 'Bhutan', tag: 'Bhutan' },
-  { label: 'Himachal Pradesh', tag: 'Himachal Pradesh' },
-  { label: 'Festivals', tag: 'Festival' },
-  { label: 'Flight', tag: 'Flight' },
-];
-
-function bySection(tagName: string, n: number): Post[] {
-  const lower = tagName.toLowerCase();
-  return rest
-    .filter((p) =>
-      (p.data.tags ?? []).some((t) => t.toLowerCase() === lower)
-    )
-    .slice(0, n);
-}
-
-const sections = CATEGORY_ORDER
-  .map((c) => ({ ...c, posts: bySection(c.tag, 3) }))
+// Magazine sections, one per type-led category, in CATEGORIES order. Each shows
+// its three latest posts; "More →" links to the category landing page.
+const sections = CATEGORIES
+  .map((cat) => ({
+    cat,
+    posts: rest.filter((p) => categoryOf(p).key === cat.key).slice(0, 4),
+  }))
   .filter((s) => s.posts.length > 0);
-
-// Posts not surfaced in any section yet — show in a "Latest" catchall at the end.
-const surfacedIds = new Set(sections.flatMap((s) => s.posts.map((p) => p.id)));
-const everythingElse = rest.filter((p) => !surfacedIds.has(p.id)).slice(0, 9);
 ---
 
 <Base preloadImage={featured?.data.cover}>
@@ -51,7 +34,12 @@ const everythingElse = rest.filter((p) => !surfacedIds.has(p.id)).slice(0, 9);
       {featured && (
         <a class="featured" href={postPath(featured)}>
           {featured.data.cover ? (
-            <div class="cover"><img src={featured.data.cover} alt={featured.data.title} width="1200" height="675" fetchpriority="high" decoding="async" /></div>
+            <div class="cover">
+              <img src={featured.data.cover} alt={featured.data.title} width="1200" height="675" fetchpriority="high" decoding="async" />
+              {featuredCat && (
+                <span class="featured-badge" style={`background:${featuredCat.badge.bg};color:${featuredCat.badge.fg}`}>{featuredCat.label}</span>
+              )}
+            </div>
           ) : (
             <div class="cover placeholder" aria-hidden="true"></div>
           )}
@@ -71,25 +59,14 @@ const everythingElse = rest.filter((p) => !surfacedIds.has(p.id)).slice(0, 9);
       {sections.map((sec) => (
         <section class="section">
           <header class="section-heading">
-            <h2>{sec.label}</h2>
-            <a class="see-all" href={`/tags/${tagSlug(sec.tag)}/`}>See all →</a>
+            <h2>{sec.cat.label}</h2>
+            <a class="see-all" href={`/category/${sec.cat.key}/`}>More →</a>
           </header>
-          <div class="post-grid two-up">
-            {sec.posts.slice(0, 2).map((post) => <PostCard post={post} />)}
+          <div class="post-grid auto">
+            {sec.posts.map((post) => <PostCard post={post} />)}
           </div>
         </section>
       ))}
-
-      {everythingElse.length > 0 && (
-        <section class="section">
-          <header class="section-heading">
-            <h2>More stories</h2>
-          </header>
-          <div class="post-grid two-up">
-            {everythingElse.slice(0, 6).map((post) => <PostCard post={post} />)}
-          </div>
-        </section>
-      )}
     </div>
     <Sidebar />
   </div>

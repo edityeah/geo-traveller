@@ -1,14 +1,14 @@
 ---
 import { tagSlug } from '../lib/posts';
 
-// The nav structure mirrors the WordPress site categories.
-// Each entry is either a flat link or a dropdown with children.
-// Children may themselves have submenus (one level deep).
+// Type-led categories drive the nav, mirroring the magazine homepage sections.
+// Each top-level link goes to its /category/<key>/ landing page; Destinations
+// keeps a region submenu for quick access to specific places.
 const nav: NavItem[] = [
   { label: 'Home', href: '/' },
-  { label: 'About', href: '/about/' },
   {
     label: 'Destinations',
+    href: '/category/destinations/',
     children: [
       {
         label: 'India',
@@ -22,17 +22,14 @@ const nav: NavItem[] = [
       { label: 'Bhutan', href: `/tags/${tagSlug('Bhutan')}/` },
     ],
   },
-  {
-    label: 'Geo Daily',
-    href: `/tags/${tagSlug('Geo Daily')}/`,
-    children: [
-      { label: 'Flight', href: `/tags/${tagSlug('Flight')}/` },
-      { label: 'Festival', href: `/tags/${tagSlug('Festival')}/` },
-    ],
-  },
+  { label: 'Guides', href: '/category/guides/' },
+  { label: 'News', href: '/category/news/' },
+  { label: 'Events', href: '/category/events/' },
+  { label: 'Festivals & Food', href: '/category/festivals-food/' },
   {
     label: 'More',
     children: [
+      { label: 'About', href: '/about/' },
       { label: 'Map', href: '/map/' },
       { label: 'Gallery', href: '/gallery/' },
       { label: 'Search', href: '/search/' },
