@@ -23,7 +23,7 @@ const UNSUB_SECRET = process.env.UNSUB_SECRET;
 const SITE_URL = process.env.SITE_URL ?? 'https://geo-traveller.com';
 const DRY = !!process.env.DIGEST_DRY_RUN;
 
-const FROM_EMAIL = 'The Geo Traveller <no-reply@adityeah.ai>';
+const FROM_EMAIL = 'The Geo Traveller <no-reply@geo-traveller.com>';
 const LOGO_URL = `${SITE_URL}/img/brand/logo.png`;
 const ACCENT = '#B5482B';
 const INK = '#2b2622';
