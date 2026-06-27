@@ -10,7 +10,7 @@ const posts = await getAllPosts();
 // tagged "Geo Daily" are excluded — they cycle through too fast and dilute
 // what the homepage is meant to showcase.
 const featuredEligible = posts.filter(
-  (p) => categoryOf(p).key !== 'news'
+  (p) => categoryOf(p).key !== 'travel-news'
 );
 const featured = featuredEligible[0] ?? posts[0];
 const rest = posts.filter((p) => p.id !== featured?.id);

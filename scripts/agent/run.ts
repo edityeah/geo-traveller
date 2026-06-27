@@ -7,10 +7,11 @@
  *              else create a news draft.
  *   All drafts pass QA → QA / QA Notes columns. Nothing auto-publishes.
  *
- * Env: AGENT_EVERGREEN_PER_DAY (5), AGENT_NEWS_PER_DAY (7), AGENT_DRY_RUN.
+ * Env: AGENT_EVERGREEN_PER_DAY (1), AGENT_NEWS_PER_DAY (7),
+ *      AGENT_EVENTS_PER_DAY (8 — food/experiences/events), AGENT_DRY_RUN.
  */
 import { Client, isFullPage } from '@notionhq/client';
-import { discover, discoverEvents } from './discover.js';
+import { discover, discoverExperiences } from './discover.js';
 import { generatePost, generateEvergreen, generateEvent, type ExistingPost } from './generate.js';
 import { resolveCover, resolveInlineImages } from './images.js';
 import { existingSourceUrls, publishToNotion, mdToBlocks } from './publish.js';
@@ -21,9 +22,11 @@ import { withRetry } from '../lib/notion.js';
 import { matchGuide, refreshGuide, type GuideRef } from './refresh.js';
 import { runQa, deterministicChecks } from './qa.js';
 
-const EVERGREEN_PER_DAY = Number(process.env.AGENT_EVERGREEN_PER_DAY ?? 5);
+// Daily mix: 1 evergreen guide / 7 travel news / 8 food+experiences (~16/day),
+// weighted toward the food/experiences/events stream (Curly Tales + event feeds).
+const EVERGREEN_PER_DAY = Number(process.env.AGENT_EVERGREEN_PER_DAY ?? 1);
 const NEWS_PER_DAY = Number(process.env.AGENT_NEWS_PER_DAY ?? 7);
-const EVENTS_PER_DAY = Number(process.env.AGENT_EVENTS_PER_DAY ?? 5);
+const EVENTS_PER_DAY = Number(process.env.AGENT_EVENTS_PER_DAY ?? 8);
 const DRY = !!process.env.AGENT_DRY_RUN;
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN!, fetch: globalThis.fetch });
@@ -110,7 +113,7 @@ async function main() {
   const run = {
     evergreen: () => doEvergreen(posts, existingForLinks),
     news: () => doNews(posts, existingForLinks),
-    events: () => doEvents(posts, existingForLinks),
+    events: () => doExperiences(posts, existingForLinks),
   };
   for (const cat of order) {
     if (await run[cat]()) return;
@@ -223,15 +226,23 @@ async function doNews(posts: Awaited<ReturnType<typeof loadPosts>>, existing: Ex
   return true;
 }
 
-async function doEvents(posts: Awaited<ReturnType<typeof loadPosts>>, existing: ExistingPost[]): Promise<boolean> {
+// Food / experiences / events stream. The candidate's `kind` (set in discovery)
+// decides the writing template and the tag that lands it in the right site
+// category: food → Food, experience → Experiences, event → Events.
+async function doExperiences(posts: Awaited<ReturnType<typeof loadPosts>>, existing: ExistingPost[]): Promise<boolean> {
   const seen = await existingSourceUrls();
-  const candidates = (await discoverEvents()).filter((c) => !seen.has(c.url));
-  if (!candidates.length) { console.log('[agent] no fresh event candidates.'); return false; }
+  const candidates = (await discoverExperiences()).filter((c) => !seen.has(c.url));
+  if (!candidates.length) { console.log('[agent] no fresh food/experience/event candidates.'); return false; }
 
   const candidate = candidates[0];
-  console.log(`[agent] event: ${candidate.title}`);
+  const kind = candidate.kind ?? 'experience';
+  console.log(`[agent] ${kind}: ${candidate.title}`);
 
-  const post = await generateEvent(candidate, existing);
+  // Events get the booking/how-to-watch template; food + experiences are
+  // written as flexible features (the general news writer adapts well).
+  const post = kind === 'event'
+    ? await generateEvent(candidate, existing)
+    : await generatePost(candidate, existing);
   const requested = (post.body.match(/\]\(query:/g) ?? []).length;
   const body = await resolveInlineImages(post.body);
   const kept = (body.match(/!\[[^\]]*\]\(https?:\/\//g) ?? []).length;
@@ -245,13 +256,14 @@ async function doEvents(posts: Awaited<ReturnType<typeof loadPosts>>, existing: 
   const qa = await runQa({ title: post.title, body, sourceSummary: candidate.summary });
   console.log(`[agent] QA: ${qa.status} — ${qa.notes}`);
 
-  if (DRY) { console.log(`[DRY] would publish event "${post.title}"`); return true; }
+  const kindTag = kind === 'food' ? 'Food' : kind === 'experience' ? 'Experiences' : 'Events';
+  if (DRY) { console.log(`[DRY] would publish ${kind} "${post.title}" (tag: ${kindTag})`); return true; }
   await publishToNotion(
-    { ...post, slug, body, tags: dedupeTags([...post.tags, 'Events']) },
+    { ...post, slug, body, tags: dedupeTags([...post.tags, kindTag]) },
     cover.url,
     { contentType: 'Events', lastUpdated: todayUtc(), qa: qa.status, qaNotes: qa.notes }
   );
-  console.log('[agent] event draft created.');
+  console.log(`[agent] ${kind} draft created.`);
   return true;
 }
 

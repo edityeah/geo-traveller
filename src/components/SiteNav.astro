@@ -1,14 +1,14 @@
 ---
 import { tagSlug } from '../lib/posts';
 
-// Type-led categories drive the nav, mirroring the magazine homepage sections.
-// Each top-level link goes to its /category/<key>/ landing page; Destinations
-// keeps a region submenu for quick access to specific places.
+// Focus categories drive the nav, mirroring the magazine homepage sections.
+// Each top-level link goes to its /category/<key>/ landing page; Travel keeps a
+// region submenu for quick access to specific places.
 const nav: NavItem[] = [
   { label: 'Home', href: '/' },
   {
-    label: 'Destinations',
-    href: '/category/destinations/',
+    label: 'Travel',
+    href: '/category/travel/',
     children: [
       {
         label: 'India',
@@ -22,10 +22,11 @@ const nav: NavItem[] = [
       { label: 'Bhutan', href: `/tags/${tagSlug('Bhutan')}/` },
     ],
   },
+  { label: 'Flights & Airlines', href: '/category/flights-airlines/' },
+  { label: 'Food', href: '/category/food/' },
+  { label: 'Experiences', href: '/category/experiences/' },
+  { label: 'Travel News', href: '/category/travel-news/' },
   { label: 'Guides', href: '/category/guides/' },
-  { label: 'News', href: '/category/news/' },
-  { label: 'Events', href: '/category/events/' },
-  { label: 'Festivals & Food', href: '/category/festivals-food/' },
   {
     label: 'More',
     children: [

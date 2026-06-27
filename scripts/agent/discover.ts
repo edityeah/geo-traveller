@@ -20,6 +20,8 @@ export interface Candidate {
   source: string;
   imageUrl?: string;
   publishedAt: string; // ISO
+  /** Sub-kind for the experiences stream — controls how the post is written + tagged. */
+  kind?: 'food' | 'experience' | 'event';
 }
 
 const RSS_FEEDS = [
@@ -145,11 +147,26 @@ export async function discover(): Promise<Candidate[]> {
 }
 
 /**
- * Discover notable EVENTS worth a "what it is / when / how to book or watch"
- * post — tech keynotes (Apple, Google, Meta, Microsoft, OpenAI), global sport
- * (Olympics, FIFA, cricket), and India events (expos, concerts, festivals).
- * Grounded in real news so dates/booking details are accurate, not invented.
+ * Discover FOOD, EXPERIENCES, and EVENTS stories — the lifestyle stream.
+ *
+ * Two source types:
+ *  - Curly Tales (food + experiences sections): a travel/food/experiences
+ *    publisher whose sections are entirely on-topic, so every item is
+ *    pre-qualified — no keyword filter. Each feed sets the candidate's `kind`.
+ *  - Event feeds (tech keynotes, sport, culture): kept behind a strict
+ *    keyword filter so we only pull genuinely attendable/watchable events,
+ *    not gossip or match reports. These are `kind: 'event'`.
+ *
+ * `kind` flows downstream: food/experience posts are written as flexible
+ * features and tagged Food / Experiences; events get the "how to book/watch"
+ * treatment and are tagged Events.
  */
+// Pre-qualified lifestyle feeds — the whole section is on-topic.
+const CURLY_TALES_FEEDS: { name: string; url: string; kind: 'food' | 'experience' }[] = [
+  { name: 'Curly Tales Food', url: 'https://curlytales.com/food/feed/', kind: 'food' },
+  { name: 'Curly Tales Experiences', url: 'https://curlytales.com/experiences/feed/', kind: 'experience' },
+];
+
 // Feeds likely to carry event announcements (tech keynotes, sport, culture).
 const EVENT_RSS_FEEDS = [
   { name: 'The Verge', url: 'https://www.theverge.com/rss/index.xml' },
@@ -174,20 +191,35 @@ function isEventRelevant(text: string): boolean {
   return EVENT_KEYWORDS.some((kw) => t.includes(kw));
 }
 
-export async function discoverEvents(): Promise<Candidate[]> {
-  // Driven by RSS (like news) so it works without a NewsAPI key; NewsAPI is a
-  // bonus when a key is present. The booking/how-to-watch angle is handled in
-  // the writing prompt, not the discovery filter.
-  const buckets = await Promise.all(
-    EVENT_RSS_FEEDS.map((f) => fetchRss(f.url, f.name).catch(() => []))
-  );
+export async function discoverExperiences(): Promise<Candidate[]> {
   const seen = new Map<string, Candidate>();
-  for (const c of buckets.flat()) {
-    if (!c.url || seen.has(c.url)) continue;
-    if (isEventRelevant(`${c.title} ${c.summary}`)) seen.set(c.url, c);
+
+  // 1. Curly Tales — every item is on-topic; tag with the feed's kind.
+  const ctBuckets = await Promise.all(
+    CURLY_TALES_FEEDS.map((f) =>
+      fetchRss(f.url, f.name)
+        .then((items) => items.map((c) => ({ ...c, kind: f.kind })))
+        .catch(() => [] as Candidate[])
+    )
+  );
+  for (const c of ctBuckets.flat()) {
+    if (c.url && !seen.has(c.url)) seen.set(c.url, c);
   }
+
+  // 2. Event feeds — keep only genuinely attendable/watchable events.
+  const evBuckets = await Promise.all(
+    EVENT_RSS_FEEDS.map((f) => fetchRss(f.url, f.name).catch(() => [] as Candidate[]))
+  );
+  for (const c of evBuckets.flat()) {
+    if (!c.url || seen.has(c.url)) continue;
+    if (isEventRelevant(`${c.title} ${c.summary}`)) seen.set(c.url, { ...c, kind: 'event' });
+  }
+
   return [...seen.values()].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
 }
+
+/** @deprecated kept as an alias; use discoverExperiences. */
+export const discoverEvents = discoverExperiences;
 
 if (process.argv[1]?.endsWith('discover.ts')) {
   discover().then((list) => {

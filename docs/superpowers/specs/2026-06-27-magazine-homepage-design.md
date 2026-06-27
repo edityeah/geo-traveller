@@ -77,3 +77,30 @@ region submenu (India › Himachal/UP/Karnataka, Bhutan). Category links go to
 - `npm test` (unit) + `npx astro build` (full static build).
 - Preview server: check homepage (desktop + mobile), a category page, and a post page
   (sidebar + card badges render, dates correct, no console errors).
+
+## Addendum (2026-06-27) — six focus categories + Curly Tales source
+
+User refined the strategy: realign the taxonomy to six focus categories and add
+Curly Tales as a food/experiences/events source, cutting evergreen to 1/day.
+
+**Site taxonomy → six categories** (categories.ts, nav, sections, badges), first
+match wins on tags:
+1. Flights & Airlines (blue) — flight/airline/airport/aviation
+2. Food (magenta) — food/restaurant/cuisine/cafe/dining
+3. Experiences (plum) — experience/event/festival/concert/expo
+4. Travel News (green) — geo daily/news
+5. Guides (ochre) — visa/passport/irctc/rail/booking/how-to/guide
+6. Travel (terracotta) — catch-all (destinations/places)
+
+**Agent**:
+- Daily mix 1 evergreen / 7 news / 8 food+experiences (was 5/7/5). Defaults in
+  run.ts; agent.yml comment updated.
+- discover.ts: `discoverExperiences()` (alias `discoverEvents` kept) pulls Curly
+  Tales food + experiences feeds (pre-qualified, no keyword filter) tagged
+  kind=food/experience, plus the existing event feeds (keyword-filtered)
+  kind=event. Verified live: ~84 candidates (40 food / 38 experience / 6 event).
+- run.ts `doExperiences()`: events → generateEvent (booking/watch); food +
+  experiences → generatePost (flexible feature). Tagged Food / Experiences /
+  Events so they land in the right site category. contentType stays 'Events'.
+- Curly Tales feeds expose no images → covers fall back to the stock/vision
+  pipeline, same as news.
