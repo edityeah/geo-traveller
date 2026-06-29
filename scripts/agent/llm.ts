@@ -53,11 +53,16 @@ function visionModel(): string {
     : (process.env.AGENT_VISION_MODEL ?? 'claude-haiku-4-5-20251001');
 }
 
+// API keys never contain whitespace; strip any (a pasted key that wrapped
+// across lines would otherwise be an invalid HTTP header value).
+function cleanKey(v: string | undefined): string {
+  return (v ?? '').replace(/\s+/g, '');
+}
 function openai(): OpenAI {
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+  return new OpenAI({ apiKey: cleanKey(process.env.OPENAI_API_KEY) });
 }
 function anthropic(): Anthropic {
-  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY!, fetch: globalThis.fetch });
+  return new Anthropic({ apiKey: cleanKey(process.env.ANTHROPIC_API_KEY), fetch: globalThis.fetch });
 }
 
 /** Reasoning models can spend tokens before emitting output — give headroom. */
