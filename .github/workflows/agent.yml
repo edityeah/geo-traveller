@@ -36,10 +36,12 @@ jobs:
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          # EXPERIMENT: run the whole agent (writing + QA + image vision) on
-          # OpenAI. Flip back to 'anthropic' (or delete this line) to revert.
+          # EXPERIMENT: run the agent on OpenAI. Flip AGENT_LLM_PROVIDER back to
+          # 'anthropic' (or delete it) to revert.
+          # Writing + image vision use gpt-5.1; QA runs on the cheaper gpt-4.1.
           AGENT_LLM_PROVIDER: openai
           AGENT_OPENAI_MODEL: gpt-5.1
+          AGENT_OPENAI_QA_MODEL: gpt-4.1
           NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           # Optional — improve image coverage when set; safe to leave unset.
