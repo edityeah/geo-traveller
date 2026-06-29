@@ -13,6 +13,10 @@ on:
         description: 'If set, regenerate this Notion page id instead of running the planner'
         required: false
         default: ''
+      category:
+        description: 'Force one post of this category (news | events | evergreen). Blank = normal planner.'
+        required: false
+        default: ''
 
 concurrency:
   group: agent
@@ -48,6 +52,7 @@ jobs:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
           REGEN_PAGE_ID: ${{ github.event.inputs.regen_page_id }}
+          AGENT_FORCE_CATEGORY: ${{ github.event.inputs.category }}
         run: |
           if [ -n "$REGEN_PAGE_ID" ]; then
             npx tsx scripts/agent/regen.ts "$REGEN_PAGE_ID"

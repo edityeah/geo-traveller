@@ -92,23 +92,29 @@ async function main() {
   const quota = { evergreen: EVERGREEN_PER_DAY, news: NEWS_PER_DAY, events: EVENTS_PER_DAY };
   console.log(`[agent] today: ${counts.evergreen} evergreen / ${counts.news} news / ${counts.events} events`);
 
-  const TOTAL_PER_DAY = EVERGREEN_PER_DAY + NEWS_PER_DAY + EVENTS_PER_DAY;
-  if (counts.evergreen + counts.news + counts.events >= TOTAL_PER_DAY) {
-    console.log(`[agent] daily total (${TOTAL_PER_DAY}) reached — nothing to do.`);
-    return;
-  }
+  const ALL: ('evergreen' | 'news' | 'events')[] = ['evergreen', 'news', 'events'];
 
   const existingForLinks: ExistingPost[] = posts
     .filter((p) => p.status === 'Published' && p.title && p.slug)
     .map((p) => ({ title: p.title, slug: p.slug, tags: p.tags, excerpt: p.excerpt }));
 
+  // Manual override: AGENT_FORCE_CATEGORY=news|events|evergreen produces exactly
+  // one post of that category, ignoring quotas/daily cap. For one-off requests.
+  const forced = (process.env.AGENT_FORCE_CATEGORY ?? '').toLowerCase();
+  const FORCE = (ALL as string[]).includes(forced) ? (forced as typeof ALL[number]) : null;
+
+  const TOTAL_PER_DAY = EVERGREEN_PER_DAY + NEWS_PER_DAY + EVENTS_PER_DAY;
+  if (!FORCE && counts.evergreen + counts.news + counts.events >= TOTAL_PER_DAY) {
+    console.log(`[agent] daily total (${TOTAL_PER_DAY}) reached — nothing to do.`);
+    return;
+  }
+
   // Prefer the under-quota category, but if it can't produce (e.g. evergreen
   // backlog exhausted, or no fresh news/events), fall back to the others so the
   // slot isn't wasted — keeps daily output near TOTAL_PER_DAY when a stream is dry.
-  const preferred = chooseCategory(counts, quota) ?? 'news';
-  const ALL: ('evergreen' | 'news' | 'events')[] = ['evergreen', 'news', 'events'];
-  const order = [preferred, ...ALL.filter((c) => c !== preferred)];
-  console.log(`[agent] preferred: ${preferred} (order: ${order.join(' → ')})`);
+  const preferred = FORCE ?? chooseCategory(counts, quota) ?? 'news';
+  const order = FORCE ? [FORCE] : [preferred, ...ALL.filter((c) => c !== preferred)];
+  console.log(`[agent]${FORCE ? ' FORCED' : ' preferred'}: ${preferred} (order: ${order.join(' → ')})`);
 
   const run = {
     evergreen: () => doEvergreen(posts, existingForLinks),
