@@ -5,12 +5,9 @@
  * Output includes inline image placeholders + entity backlinks + internal
  * backlinks to other Geo-Traveller posts.
  */
-import Anthropic from '@anthropic-ai/sdk';
 import type { Candidate } from './discover.js';
 import type { SeedTopic } from './topics.js';
-
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY!;
-const MODEL = process.env.AGENT_MODEL ?? 'claude-sonnet-4-5-20250929';
+import { structuredCompletion } from './llm.js';
 
 export interface ExistingPost {
   title: string;
@@ -126,8 +123,6 @@ export async function generatePost(
   candidate: Candidate,
   existingPosts: ExistingPost[] = []
 ): Promise<GeneratedPost> {
-  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
-
   // Trim to most-relevant 20 by simple keyword overlap, so the prompt doesn't blow up.
   const topic = (candidate.title + ' ' + candidate.summary).toLowerCase();
   const ranked = existingPosts
@@ -160,20 +155,14 @@ ${postList}
 
 Write the Geo-Traveller post. Use the publish_post tool to return the result.`;
 
-  const res = await client.messages.create({
-    model: MODEL,
-    max_tokens: 4000,
+  const input = (await structuredCompletion({
     system: SYSTEM,
-    tools: [TOOL as any],
-    tool_choice: { type: 'tool', name: 'publish_post' },
-    messages: [{ role: 'user', content: userPrompt }],
-  });
-
-  const toolUse = res.content.find((c: any) => c.type === 'tool_use');
-  if (!toolUse || toolUse.type !== 'tool_use') {
-    throw new Error('Claude did not return a tool_use block');
-  }
-  const input = toolUse.input as Omit<GeneratedPost, 'sourceUrl' | 'sourceName'>;
+    user: userPrompt,
+    schema: TOOL.input_schema as any,
+    toolName: TOOL.name,
+    toolDescription: TOOL.description,
+    maxTokens: 4000,
+  })) as Omit<GeneratedPost, 'sourceUrl' | 'sourceName'>;
   return {
     ...input,
     sourceUrl: candidate.url,
@@ -185,8 +174,6 @@ export async function generateEvergreen(
   topic: SeedTopic,
   existingPosts: ExistingPost[] = []
 ): Promise<GeneratedPost> {
-  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
-
   const postList = existingPosts.length
     ? existingPosts.slice(0, 20).map((p) => `- ${p.title} — slug: ${p.slug}`).join('\n')
     : '(none yet)';
@@ -203,17 +190,14 @@ ${postList}
 
 Use the publish_post tool. Set tags to include the relevant ones above (do NOT include "Geo Daily"). coverQuery should describe a fitting photo subject.`;
 
-  const res = await client.messages.create({
-    model: MODEL,
-    max_tokens: 6000,
+  const input = (await structuredCompletion({
     system: SYSTEM_EVERGREEN,
-    tools: [TOOL as any],
-    tool_choice: { type: 'tool', name: 'publish_post' },
-    messages: [{ role: 'user', content: userPrompt }],
-  });
-  const toolUse = res.content.find((c: any) => c.type === 'tool_use');
-  if (!toolUse || toolUse.type !== 'tool_use') throw new Error('Claude did not return a tool_use block');
-  const input = toolUse.input as Omit<GeneratedPost, 'sourceUrl' | 'sourceName'>;
+    user: userPrompt,
+    schema: TOOL.input_schema as any,
+    toolName: TOOL.name,
+    toolDescription: TOOL.description,
+    maxTokens: 6000,
+  })) as Omit<GeneratedPost, 'sourceUrl' | 'sourceName'>;
   return { ...input, sourceUrl: '', sourceName: '' };
 }
 
@@ -243,8 +227,6 @@ export async function generateEvent(
   candidate: Candidate,
   existingPosts: ExistingPost[] = []
 ): Promise<GeneratedPost> {
-  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
-
   const postList = existingPosts.length
     ? existingPosts.slice(0, 20).map((p) => `- ${p.title} — slug: ${p.slug}`).join('\n')
     : '(none yet)';
@@ -262,16 +244,13 @@ ${postList}
 
 Write the event post. Use the publish_post tool. Tags MUST include "Events" plus topical tags (e.g. Tech, Sports, Cricket, Music, India, Olympics). coverQuery should describe a fitting concrete photo subject.`;
 
-  const res = await client.messages.create({
-    model: MODEL,
-    max_tokens: 4000,
+  const input = (await structuredCompletion({
     system: SYSTEM_EVENT,
-    tools: [TOOL as any],
-    tool_choice: { type: 'tool', name: 'publish_post' },
-    messages: [{ role: 'user', content: userPrompt }],
-  });
-  const toolUse = res.content.find((c: any) => c.type === 'tool_use');
-  if (!toolUse || toolUse.type !== 'tool_use') throw new Error('Claude did not return a tool_use block');
-  const input = toolUse.input as Omit<GeneratedPost, 'sourceUrl' | 'sourceName'>;
+    user: userPrompt,
+    schema: TOOL.input_schema as any,
+    toolName: TOOL.name,
+    toolDescription: TOOL.description,
+    maxTokens: 4000,
+  })) as Omit<GeneratedPost, 'sourceUrl' | 'sourceName'>;
   return { ...input, sourceUrl: candidate.url, sourceName: candidate.source };
 }
