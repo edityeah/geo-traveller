@@ -59,8 +59,10 @@ export default defineConfig({
     sitemap({
       filter: (page) => {
         const p = new URL(page).pathname;
-        // Utility pages add no SEO value.
-        if (p === '/search/' || p === '/archive/') return false;
+        // Utility pages add no SEO value. /archive/ (the "All stories" index)
+        // stays IN the sitemap — it's a complete internal-link hub that helps
+        // Google discover and crawl every post.
+        if (p === '/search/') return false;
         // Drop thin tag pages (used by only one post). If counts couldn't be
         // computed, don't over-filter.
         const m = p.match(/^\/tags\/([^/]+)\/?$/);

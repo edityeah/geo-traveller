@@ -10,7 +10,7 @@ export const SITE = {
   shortName: 'Geo-Traveller',
   url: 'https://geo-traveller.com',
   description:
-    'A travel journal — places, people, and the long way around. Stories from India and beyond.',
+    'Travel stories, flight and visa guides, food, festivals and experiences across India and the world — a journal by Aditya Chaudhari.',
   language: 'en-US',
   author: {
     name: 'Aditya Chaudhari',
