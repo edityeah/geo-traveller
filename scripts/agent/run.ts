@@ -7,8 +7,8 @@
  *              else create a news draft.
  *   All drafts pass QA → QA / QA Notes columns. Nothing auto-publishes.
  *
- * Env: AGENT_EVERGREEN_PER_DAY (1), AGENT_NEWS_PER_DAY (7),
- *      AGENT_EVENTS_PER_DAY (8 — food/experiences/events), AGENT_DRY_RUN.
+ * Env: AGENT_EVERGREEN_PER_DAY (1), AGENT_NEWS_PER_DAY (4),
+ *      AGENT_EVENTS_PER_DAY (5 — food/experiences/events), AGENT_DRY_RUN.
  */
 import { Client, isFullPage } from '@notionhq/client';
 import { discover, discoverExperiences } from './discover.js';
@@ -22,11 +22,11 @@ import { withRetry } from '../lib/notion.js';
 import { matchGuide, refreshGuide, type GuideRef } from './refresh.js';
 import { runQa, deterministicChecks } from './qa.js';
 
-// Daily mix: 1 evergreen guide / 7 travel news / 8 food+experiences (~16/day),
+// Daily mix: 1 evergreen guide / 4 travel news / 5 food+experiences (10/day),
 // weighted toward the food/experiences/events stream (Curly Tales + event feeds).
 const EVERGREEN_PER_DAY = Number(process.env.AGENT_EVERGREEN_PER_DAY ?? 1);
-const NEWS_PER_DAY = Number(process.env.AGENT_NEWS_PER_DAY ?? 7);
-const EVENTS_PER_DAY = Number(process.env.AGENT_EVENTS_PER_DAY ?? 8);
+const NEWS_PER_DAY = Number(process.env.AGENT_NEWS_PER_DAY ?? 4);
+const EVENTS_PER_DAY = Number(process.env.AGENT_EVENTS_PER_DAY ?? 5);
 const DRY = !!process.env.AGENT_DRY_RUN;
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN!, fetch: globalThis.fetch });

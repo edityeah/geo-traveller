@@ -2,7 +2,7 @@ name: Trending-topic blog agent
 
 on:
   # Hourly → up to 24 run-slots/day, one post each. The planner caps daily
-  # output at ~16 (1 evergreen guide / 7 travel news / 8 food+experiences)
+  # output at 10 (1 evergreen guide / 4 travel news / 5 food+experiences)
   # from Notion state; extra slots no-op. Hourly gives enough headroom to hit
   # the cap despite GitHub's scheduled-cron delays/skips.
   schedule:
