@@ -65,9 +65,14 @@ function anthropic(): Anthropic {
   return new Anthropic({ apiKey: cleanKey(process.env.ANTHROPIC_API_KEY), fetch: globalThis.fetch });
 }
 
-/** Reasoning models can spend tokens before emitting output — give headroom. */
+/**
+ * Reasoning models (gpt-5.x) spend tokens THINKING before they emit output, so
+ * the completion cap must cover reasoning + the full post or the body gets cut
+ * off mid-sentence. Give generous headroom — billing is per actual token used,
+ * so a high ceiling only prevents truncation, it doesn't cost more.
+ */
 function openaiCap(maxTokens: number): number {
-  return Math.max(maxTokens, 8000);
+  return Math.max(maxTokens, 16000);
 }
 
 export interface ImagePart { media_type: string; data: string } // base64 bytes
