@@ -11,7 +11,8 @@
  *      AGENT_EVENTS_PER_DAY (5 — food/experiences/events), AGENT_DRY_RUN.
  */
 import { Client, isFullPage } from '@notionhq/client';
-import { discover, discoverExperiences } from './discover.js';
+import { discover, discoverExperiences, type Candidate } from './discover.js';
+import { discoverTrending, trendMix } from './trends.js';
 import { generatePost, generateEvergreen, generateEvent, type ExistingPost } from './generate.js';
 import { resolveCover, resolveInlineImages } from './images.js';
 import { existingSourceUrls, publishToNotion, mdToBlocks } from './publish.js';
@@ -89,10 +90,18 @@ function dedupeTags(tags: string[]): string[] {
 async function main() {
   const posts = await loadPosts();
   const counts = dayCounts(posts);
-  const quota = { evergreen: EVERGREEN_PER_DAY, news: NEWS_PER_DAY, events: EVENTS_PER_DAY };
-  console.log(`[agent] today: ${counts.evergreen} evergreen / ${counts.news} news / ${counts.events} events`);
 
   const ALL: ('evergreen' | 'news' | 'events')[] = ['evergreen', 'news', 'events'];
+
+  // Google Trends signal (best-effort): travel-relevant trending stories,
+  // grounded in a real source article. Drives BOTH the daily mix (trendMix)
+  // and which story gets written (prioritised in doNews/doExperiences).
+  const trending = await discoverTrending().catch(() => [] as Candidate[]);
+  const fallback = { evergreen: EVERGREEN_PER_DAY, news: NEWS_PER_DAY, events: EVENTS_PER_DAY };
+  const quota = trendMix(trending, fallback);
+  const tExp = trending.filter((c) => c.kind === 'food' || c.kind === 'experience').length;
+  console.log(`[agent] today: ${counts.evergreen} evergreen / ${counts.news} news / ${counts.events} events`);
+  console.log(`[agent] trends: ${trending.length} travel-relevant (news ${trending.length - tExp} / food+exp ${tExp}) → mix ${quota.evergreen}/${quota.news}/${quota.events}`);
 
   const existingForLinks: ExistingPost[] = posts
     .filter((p) => p.status === 'Published' && p.title && p.slug)
@@ -103,7 +112,7 @@ async function main() {
   const forced = (process.env.AGENT_FORCE_CATEGORY ?? '').toLowerCase();
   const FORCE = (ALL as string[]).includes(forced) ? (forced as typeof ALL[number]) : null;
 
-  const TOTAL_PER_DAY = EVERGREEN_PER_DAY + NEWS_PER_DAY + EVENTS_PER_DAY;
+  const TOTAL_PER_DAY = quota.evergreen + quota.news + quota.events;
   if (!FORCE && counts.evergreen + counts.news + counts.events >= TOTAL_PER_DAY) {
     console.log(`[agent] daily total (${TOTAL_PER_DAY}) reached — nothing to do.`);
     return;
@@ -116,10 +125,14 @@ async function main() {
   const order = FORCE ? [FORCE] : [preferred, ...ALL.filter((c) => c !== preferred)];
   console.log(`[agent]${FORCE ? ' FORCED' : ' preferred'}: ${preferred} (order: ${order.join(' → ')})`);
 
+  // Split trending into the streams that consume them.
+  const trendNews = trending.filter((c) => !c.kind);
+  const trendExp = trending.filter((c) => c.kind === 'food' || c.kind === 'experience');
+
   const run = {
     evergreen: () => doEvergreen(posts, existingForLinks),
-    news: () => doNews(posts, existingForLinks),
-    events: () => doExperiences(posts, existingForLinks),
+    news: () => doNews(posts, existingForLinks, trendNews),
+    events: () => doExperiences(posts, existingForLinks, trendExp),
   };
   for (const cat of order) {
     if (await run[cat]()) return;
@@ -163,9 +176,17 @@ async function doEvergreen(posts: Awaited<ReturnType<typeof loadPosts>>, existin
   return true;
 }
 
-async function doNews(posts: Awaited<ReturnType<typeof loadPosts>>, existing: ExistingPost[]): Promise<boolean> {
+function mergeByUrl(...lists: Candidate[][]): Candidate[] {
+  const seen = new Set<string>(); const out: Candidate[] = [];
+  for (const c of lists.flat()) { if (c.url && !seen.has(c.url)) { seen.add(c.url); out.push(c); } }
+  return out;
+}
+
+async function doNews(posts: Awaited<ReturnType<typeof loadPosts>>, existing: ExistingPost[], trending: Candidate[] = []): Promise<boolean> {
   const seen = await existingSourceUrls();
-  const candidates = (await discover()).filter((c) => !seen.has(c.url));
+  // Trending stories first (grounded in a real source), then the RSS feeds.
+  const candidates = mergeByUrl(trending, await discover()).filter((c) => !seen.has(c.url));
+  if (candidates.length && candidates[0] === trending[0]) console.log(`[agent] news: trending story prioritised`);
   if (!candidates.length) { console.log('[agent] no fresh news candidates.'); return false; }
 
   const guides: GuideRef[] = posts
@@ -235,9 +256,10 @@ async function doNews(posts: Awaited<ReturnType<typeof loadPosts>>, existing: Ex
 // Food / experiences / events stream. The candidate's `kind` (set in discovery)
 // decides the writing template and the tag that lands it in the right site
 // category: food → Food, experience → Experiences, event → Events.
-async function doExperiences(posts: Awaited<ReturnType<typeof loadPosts>>, existing: ExistingPost[]): Promise<boolean> {
+async function doExperiences(posts: Awaited<ReturnType<typeof loadPosts>>, existing: ExistingPost[], trending: Candidate[] = []): Promise<boolean> {
   const seen = await existingSourceUrls();
-  const candidates = (await discoverExperiences()).filter((c) => !seen.has(c.url));
+  // Trending food/experience stories first, then the RSS feeds.
+  const candidates = mergeByUrl(trending, await discoverExperiences()).filter((c) => !seen.has(c.url));
   if (!candidates.length) { console.log('[agent] no fresh food/experience/event candidates.'); return false; }
 
   const candidate = candidates[0];
