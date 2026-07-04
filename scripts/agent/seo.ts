@@ -69,10 +69,11 @@ export function seoScore(input: SeoInput): SeoResult {
   if (headings.some((h) => h.toLowerCase().includes(kwLower))) score += 10;
   else issues.push(`Focus keyword not in any subheading.`);
 
-  // 4. Keyword density: present but not stuffed, 0.3%–2.5% (15)
+  // 4. Keyword usage: present at least twice, but not stuffed (15).
+  // Measured as phrase occurrences per 100 words (>~3.5 reads as stuffing).
   const kwCount = countOccurrences(text, kw);
-  const density = wordCount ? (kwCount * kw.split(/\s+/).length) / wordCount : 0;
-  if (kwCount >= 2 && density <= 0.025) score += 15;
+  const per100 = wordCount ? (kwCount / wordCount) * 100 : 0;
+  if (kwCount >= 2 && per100 <= 3.5) score += 15;
   else if (kwCount < 2) issues.push(`Focus keyword used only ${kwCount}× — use it a few more times naturally.`);
   else issues.push(`Focus keyword over-used (keyword stuffing) — reduce it.`);
 

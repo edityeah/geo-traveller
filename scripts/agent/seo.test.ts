@@ -9,18 +9,19 @@ test('pickFocusKeyword prefers declared, then a specific tag, then title', () =>
 });
 
 test('seoScore rewards a well-optimized post', () => {
+  const filler = 'This section explains the process clearly with practical detail for the traveller planning the trip and what to expect at each stage. ';
   const body = [
     '## Thailand visa for Indians: the essentials',
-    'Getting a Thailand visa for Indians is straightforward. This guide covers the Thailand visa for Indians step by step.',
+    `Getting a Thailand visa for Indians is straightforward once you know the steps. ${filler.repeat(3)}`,
     '',
     '### Documents you need',
-    'Bring your passport. See our [Japan visa guide](/posts/japan-visa/) and [flight tips](/posts/flight-tips/).',
-    'Check the [official Thai embassy](https://thaiembassy.com) and [VFS](https://vfsglobal.com) sites.',
+    `Bring your passport and photos. See our [Japan visa guide](/posts/japan-visa/) and [flight booking tips](/posts/flight-tips/). ${filler.repeat(3)}`,
+    'Check the [official Thai embassy](https://thaiembassy.com) and [VFS Global](https://vfsglobal.com) pages before you apply.',
     '',
     '### Costs and timelines',
-    'Fees are modest. The Thailand visa for Indians usually processes in days.',
+    `The visa usually processes within a few working days. ${filler.repeat(3)} A Thailand visa for Indians is easy to plan for.`,
   ].join('\n');
-  const r = seoScore({ title: 'Thailand visa for Indians', body, focusKeyword: 'Thailand visa for Indians', minWords: 30 });
+  const r = seoScore({ title: 'Thailand visa for Indians', body, focusKeyword: 'Thailand visa for Indians', minWords: 100 });
   assert.ok(r.score >= 80, `expected strong score, got ${r.score} (${r.issues.join('; ')})`);
 });
 
