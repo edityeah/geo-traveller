@@ -102,8 +102,12 @@ const TOOL = {
         type: 'string',
         description: 'A short Unsplash search query for the cover photo. Must be SPECIFIC to this story\'s subject — a place, object, person, or scene from the post — not abstract. Bad: "travel"; "technology". Good: "hotel front desk", "Tokyo street at night", "airport terminal sunset".',
       },
+      focusKeyword: {
+        type: 'string',
+        description: 'The primary search phrase this post should rank for (2–5 words, e.g. "Thailand visa for Indians", "new Mumbai restaurants"). Weave it naturally into the title, opening paragraph, and at least one subheading.',
+      },
     },
-    required: ['title', 'slug', 'excerpt', 'tags', 'body', 'coverQuery'],
+    required: ['title', 'slug', 'excerpt', 'tags', 'body', 'coverQuery', 'focusKeyword'],
   },
 } as const;
 
@@ -115,6 +119,7 @@ export interface GeneratedPost {
   locationName?: string;
   body: string;
   coverQuery: string;
+  focusKeyword?: string;
   sourceUrl: string;
   sourceName: string;
 }
@@ -253,4 +258,56 @@ Write the event post. Use the publish_post tool. Tags MUST include "Events" plus
     maxTokens: 4000,
   })) as Omit<GeneratedPost, 'sourceUrl' | 'sourceName'>;
   return { ...input, sourceUrl: candidate.url, sourceName: candidate.source };
+}
+
+const SYSTEM_SEO_REWRITE = `You are an SEO editor for Geo-Traveller. You are given a draft post and a list of on-page SEO issues. Rewrite the post to fix EVERY issue while keeping the same facts, angle, and voice.
+
+Hard rules:
+- Do NOT invent facts, dates, prices, or events. Only restructure/expand what's already implied by the draft; if you can't fix an issue without inventing, leave that part accurate.
+- Keep (and where helpful, add) inline images in the exact form ![alt](query:concrete subject).
+- Keep internal backlinks [text](/posts/SLUG/) — use only slugs from the provided list — and entity links to official sites / Wikipedia.
+- Weave the focus keyword naturally into the title, the opening paragraph, and at least one ## / ### subheading. Don't keyword-stuff.
+- Use ## and ### subheadings and short paragraphs. No emojis, no "Source:" line.
+
+Output the improved post via the publish_post tool (all fields), keeping the same focusKeyword.`;
+
+/** Rewrite a draft to fix specific SEO issues. Grounded — no new facts. */
+export async function rewriteForSeo(
+  post: GeneratedPost,
+  issues: string[],
+  focusKeyword: string,
+  existingPosts: ExistingPost[] = []
+): Promise<GeneratedPost> {
+  const postList = existingPosts.length
+    ? existingPosts.slice(0, 20).map((p) => `- ${p.title} — slug: ${p.slug}`).join('\n')
+    : '(none yet)';
+
+  const userPrompt = `Focus keyword: ${focusKeyword}
+
+SEO issues to fix:
+${issues.map((i) => `- ${i}`).join('\n')}
+
+Existing Geo-Traveller posts you can link to (use the slug):
+${postList}
+
+CURRENT DRAFT
+Title: ${post.title}
+Excerpt: ${post.excerpt}
+Tags: ${post.tags.join(', ')}
+
+Body:
+${post.body}
+
+Rewrite it to fix the issues. Use the publish_post tool.`;
+
+  const input = (await structuredCompletion({
+    system: SYSTEM_SEO_REWRITE,
+    user: userPrompt,
+    schema: TOOL.input_schema as any,
+    toolName: TOOL.name,
+    toolDescription: TOOL.description,
+    maxTokens: 6000,
+  })) as Omit<GeneratedPost, 'sourceUrl' | 'sourceName'>;
+  // Preserve provenance from the original draft.
+  return { ...input, sourceUrl: post.sourceUrl, sourceName: post.sourceName };
 }

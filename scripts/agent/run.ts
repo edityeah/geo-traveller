@@ -13,7 +13,8 @@
 import { Client, isFullPage } from '@notionhq/client';
 import { discover, discoverExperiences, type Candidate } from './discover.js';
 import { discoverTrending, trendMix } from './trends.js';
-import { generatePost, generateEvergreen, generateEvent, type ExistingPost } from './generate.js';
+import { generatePost, generateEvergreen, generateEvent, rewriteForSeo, type ExistingPost, type GeneratedPost } from './generate.js';
+import { seoScore } from './seo.js';
 import { resolveCover, resolveInlineImages } from './images.js';
 import { existingSourceUrls, publishToNotion, mdToBlocks } from './publish.js';
 import { seedTopics } from './topics.js';
@@ -29,9 +30,42 @@ const EVERGREEN_PER_DAY = Number(process.env.AGENT_EVERGREEN_PER_DAY ?? 1);
 const NEWS_PER_DAY = Number(process.env.AGENT_NEWS_PER_DAY ?? 4);
 const EVENTS_PER_DAY = Number(process.env.AGENT_EVENTS_PER_DAY ?? 5);
 const DRY = !!process.env.AGENT_DRY_RUN;
+// Drafts scoring below this get one automatic SEO rewrite before saving.
+const SEO_MIN = Number(process.env.AGENT_SEO_MIN ?? 70);
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN!, fetch: globalThis.fetch });
 const DB = process.env.NOTION_DATABASE_ID!;
+
+/**
+ * Score a freshly-generated draft for on-page SEO; if it's below SEO_MIN, ask
+ * the creator agent to rewrite it once (kept only if the score improves). Then
+ * resolve inline images on the final version. Returns the post to publish, its
+ * image-resolved body, and a short note for the QA column.
+ */
+async function seoRefine(
+  raw: GeneratedPost,
+  existing: ExistingPost[],
+  minWords: number
+): Promise<{ post: GeneratedPost; body: string; seoNote: string }> {
+  let cur = raw;
+  let s = seoScore({ title: cur.title, body: cur.body, excerpt: cur.excerpt, focusKeyword: cur.focusKeyword, tags: cur.tags, minWords });
+  console.log(`[agent] SEO ${s.score}/100 (kw: ${s.focusKeyword})${s.issues.length ? ' — ' + s.issues.join('; ') : ''}`);
+  if (s.score < SEO_MIN) {
+    try {
+      const rw = await rewriteForSeo(cur, s.issues, s.focusKeyword, existing);
+      const rs = seoScore({ title: rw.title, body: rw.body, excerpt: rw.excerpt, focusKeyword: rw.focusKeyword ?? s.focusKeyword, tags: rw.tags, minWords });
+      if (rs.score > s.score) { cur = rw; s = rs; console.log(`[agent] SEO rewrite → ${rs.score}/100`); }
+      else console.log(`[agent] SEO rewrite not better (${rs.score}/100) — keeping original`);
+    } catch (e: any) {
+      console.warn(`[agent] SEO rewrite failed: ${e?.message ?? e}`);
+    }
+  }
+  const requested = (cur.body.match(/\]\(query:/g) ?? []).length;
+  const body = await resolveInlineImages(cur.body);
+  const kept = (body.match(/!\[[^\]]*\]\(https?:\/\//g) ?? []).length;
+  console.log(`[agent] inline images: ${requested} requested → ${kept} kept`);
+  return { post: cur, body, seoNote: `SEO ${s.score}/100` };
+}
 
 function plain(rich: any[] | undefined): string {
   return (rich ?? []).map((r) => r.plain_text ?? '').join('');
@@ -149,11 +183,7 @@ async function doEvergreen(posts: Awaited<ReturnType<typeof loadPosts>>, existin
   if (!topic) { console.log('[agent] no uncovered evergreen topics left.'); return false; }
   console.log(`[agent] evergreen topic: ${topic.key} — ${topic.title}`);
 
-  const post = await generateEvergreen(topic, existing);
-  const requested = (post.body.match(/\]\(query:/g) ?? []).length;
-  const body = await resolveInlineImages(post.body);
-  const kept = (body.match(/!\[[^\]]*\]\(https?:\/\//g) ?? []).length;
-  console.log(`[agent] inline images: ${requested} requested → ${kept} kept`);
+  const { post, body, seoNote } = await seoRefine(await generateEvergreen(topic, existing), existing, 800);
   const slug = (post.slug || slugify(post.title)).replace(/[^a-z0-9-]/g, '');
   // Drive evergreen covers from the curated scenic subjects (landmark/skyline/
   // flag) rather than the model's coverQuery, which skews to document close-ups.
@@ -170,7 +200,7 @@ async function doEvergreen(posts: Awaited<ReturnType<typeof loadPosts>>, existin
   await publishToNotion(
     { ...post, slug, body, tags: dedupeTags([...post.tags]) },
     cover.url,
-    { contentType: 'Evergreen', topicKey: topic.key, lastUpdated: todayUtc(), qa: qa.status, qaNotes: qa.notes }
+    { contentType: 'Evergreen', topicKey: topic.key, lastUpdated: todayUtc(), qa: qa.status, qaNotes: `${qa.notes} | ${seoNote}` }
   );
   console.log('[agent] evergreen draft created.');
   return true;
@@ -196,11 +226,7 @@ async function doNews(posts: Awaited<ReturnType<typeof loadPosts>>, existing: Ex
   const candidate = candidates[0];
   console.log(`[agent] news: ${candidate.title}`);
 
-  const post = await generatePost(candidate, existing);
-  const requested = (post.body.match(/\]\(query:/g) ?? []).length;
-  const body = await resolveInlineImages(post.body);
-  const kept = (body.match(/!\[[^\]]*\]\(https?:\/\//g) ?? []).length;
-  console.log(`[agent] inline images: ${requested} requested → ${kept} kept`);
+  const { post, body, seoNote } = await seoRefine(await generatePost(candidate, existing), existing, 500);
   const slug = (post.slug || slugify(post.title)).replace(/[^a-z0-9-]/g, '');
   const cover = await resolveCover({
     type: 'news', title: post.title, unsplashQuery: post.coverQuery, candidateImageUrl: candidate.imageUrl,
@@ -247,7 +273,7 @@ async function doNews(posts: Awaited<ReturnType<typeof loadPosts>>, existing: Ex
   await publishToNotion(
     { ...post, slug, body, tags: dedupeTags([...post.tags, 'Geo Daily']) },
     cover.url,
-    { contentType: 'News', topicKey: guide?.key, lastUpdated: todayUtc(), qa: qa.status, qaNotes: qa.notes }
+    { contentType: 'News', topicKey: guide?.key, lastUpdated: todayUtc(), qa: qa.status, qaNotes: `${qa.notes} | ${seoNote}` }
   );
   console.log('[agent] news draft created.');
   return true;
@@ -268,13 +294,10 @@ async function doExperiences(posts: Awaited<ReturnType<typeof loadPosts>>, exist
 
   // Events get the booking/how-to-watch template; food + experiences are
   // written as flexible features (the general news writer adapts well).
-  const post = kind === 'event'
+  const raw = kind === 'event'
     ? await generateEvent(candidate, existing)
     : await generatePost(candidate, existing);
-  const requested = (post.body.match(/\]\(query:/g) ?? []).length;
-  const body = await resolveInlineImages(post.body);
-  const kept = (body.match(/!\[[^\]]*\]\(https?:\/\//g) ?? []).length;
-  console.log(`[agent] inline images: ${requested} requested → ${kept} kept`);
+  const { post, body, seoNote } = await seoRefine(raw, existing, 500);
   const slug = (post.slug || slugify(post.title)).replace(/[^a-z0-9-]/g, '');
   const cover = await resolveCover({
     type: 'news', title: post.title, unsplashQuery: post.coverQuery, candidateImageUrl: candidate.imageUrl,
@@ -289,7 +312,7 @@ async function doExperiences(posts: Awaited<ReturnType<typeof loadPosts>>, exist
   await publishToNotion(
     { ...post, slug, body, tags: dedupeTags([...post.tags, kindTag]) },
     cover.url,
-    { contentType: 'Events', lastUpdated: todayUtc(), qa: qa.status, qaNotes: qa.notes }
+    { contentType: 'Events', lastUpdated: todayUtc(), qa: qa.status, qaNotes: `${qa.notes} | ${seoNote}` }
   );
   console.log(`[agent] ${kind} draft created.`);
   return true;
