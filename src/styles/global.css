@@ -467,9 +467,19 @@ a.featured:hover .read-more { color: var(--accent-deep); }
 .with-sidebar > .main-col {
   min-width: 0;
 }
-/* Sidebar scrolls naturally with the page — no sticky positioning. */
 @media (max-width: 1024px) {
   .with-sidebar { grid-template-columns: 1fr; gap: 4rem; }
+}
+/* Desktop: About / Subscribe / Connect scroll away normally, but pin the
+   Trending block so the sidebar's real estate isn't wasted on a long page.
+   The sidebar stretches to the full row height so the sticky block can travel
+   the whole scroll. */
+@media (min-width: 1025px) {
+  .with-sidebar > .sidebar { align-self: stretch; }
+  .sidebar .sb-trending {
+    position: sticky;
+    top: 1.5rem;
+  }
 }
 
 /* Post page layout reuses .with-sidebar; keep readable measure for the body. */
