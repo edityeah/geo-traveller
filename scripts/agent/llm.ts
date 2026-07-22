@@ -72,7 +72,7 @@ function anthropic(): Anthropic {
  * so a high ceiling only prevents truncation, it doesn't cost more.
  */
 function openaiCap(maxTokens: number): number {
-  return Math.max(maxTokens, 16000);
+  return Math.max(maxTokens, 32000);
 }
 
 export interface ImagePart { media_type: string; data: string } // base64 bytes
