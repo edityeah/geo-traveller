@@ -103,6 +103,9 @@ export async function structuredCompletion(opts: {
       }],
       tool_choice: { type: 'function', function: { name: opts.toolName } },
     });
+    const fr = res.choices[0]?.finish_reason;
+    const u: any = res.usage ?? {};
+    console.log(`[llm] openai finish_reason=${fr} completion=${u.completion_tokens} reasoning=${u.completion_tokens_details?.reasoning_tokens ?? '?'} cap=${openaiCap(opts.maxTokens)}`);
     const call = res.choices[0]?.message?.tool_calls?.[0];
     if (!call || call.type !== 'function') throw new Error('OpenAI did not return a function call');
     try {
