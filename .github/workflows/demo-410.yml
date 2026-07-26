@@ -1,0 +1,70 @@
+name: demo-410 (junk subdomain cleanup)
+
+# One-off maintenance: resurrect demo.geo-traveller.com (the old hacked-WP
+# subdomain, DNS now dead) and serve a wildcard HTTP 410 Gone from a tiny
+# Worker, so Google purges its ~500k known junk URLs quickly instead of
+# retrying DNS errors for months. See scripts/cloudflare/demo-410/worker.ts.
+#
+# Steps: upsert a proxied placeholder DNS record for demo (192.0.2.1 — never
+# hit; the Worker route intercepts), then deploy the Worker on
+# demo.geo-traveller.com/*. Rerunnable; both steps are idempotent.
+#
+# Requires CLOUDFLARE_API_TOKEN scopes: Zone.DNS:Edit + Workers Scripts:Edit
+# (+ Workers Routes:Edit). If a step fails with an auth error, bump the token
+# permissions in the Cloudflare dashboard and rerun.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Upsert proxied DNS record for demo
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONE: geo-traveller.com
+          SUB: demo
+        run: |
+          set -e
+          auth() { curl -sf -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" "$@"; }
+          ZID=$(auth "https://api.cloudflare.com/client/v4/zones?name=$ZONE" | \
+            node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{console.log(JSON.parse(s).result?.[0]?.id||"")})')
+          test -n "$ZID" || { echo "::error::zone lookup failed (token missing Zone:Read?)"; exit 1; }
+          echo "zone id: $ZID"
+          EXISTING=$(auth "https://api.cloudflare.com/client/v4/zones/$ZID/dns_records?name=$SUB.$ZONE" | \
+            node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{console.log(JSON.parse(s).result?.[0]?.id||"")})')
+          BODY='{"type":"A","name":"'"$SUB"'","content":"192.0.2.1","proxied":true,"ttl":1,"comment":"410 Gone worker for old hacked-WP junk URLs (demo-410.yml)"}'
+          if [ -n "$EXISTING" ]; then
+            echo "record exists ($EXISTING) — updating"
+            auth -X PUT "https://api.cloudflare.com/client/v4/zones/$ZID/dns_records/$EXISTING" -d "$BODY" > /dev/null
+          else
+            auth -X POST "https://api.cloudflare.com/client/v4/zones/$ZID/dns_records" -d "$BODY" > /dev/null
+          fi
+          echo "DNS record for $SUB.$ZONE in place (proxied)."
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy 410 Worker on demo.geo-traveller.com/*
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        working-directory: scripts/cloudflare/demo-410
+        run: npx wrangler deploy
+
+      - name: Verify 410 responses
+        run: |
+          sleep 15
+          for path in / /hiroshi.php?store/11195163104 /index.php/?_g=47432 /anything/at/all; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "https://demo.geo-traveller.com$path")
+            echo "demo.geo-traveller.com$path -> $code"
+            test "$code" = "410" || { echo "::error::expected 410, got $code for $path"; exit 1; }
+          done
+          echo "All junk paths return 410 Gone."

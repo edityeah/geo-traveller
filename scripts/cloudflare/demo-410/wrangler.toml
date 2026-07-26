@@ -1,0 +1,9 @@
+# Worker serving 410 Gone for everything on demo.geo-traveller.com.
+# See worker.ts for why. Deployed by .github/workflows/demo-410.yml.
+name = "demo-410"
+main = "worker.ts"
+compatibility_date = "2026-07-01"
+
+routes = [
+  { pattern = "demo.geo-traveller.com/*", zone_name = "geo-traveller.com" },
+]
