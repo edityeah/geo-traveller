@@ -18,6 +18,8 @@ const posts = defineCollection({
     excerpt: z.string().optional(),
     originalUrl: z.string().optional(),
     originalDate: z.coerce.date().optional(),
+    // From Notion "Last Updated" — set on agent guide refreshes / manual edits.
+    lastUpdated: z.coerce.date().optional(),
     draft: z.boolean().default(false),
   }),
 });

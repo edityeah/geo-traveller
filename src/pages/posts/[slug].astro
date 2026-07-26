@@ -33,6 +33,13 @@ const wordCount = countWords(post.body);
 const publishDate = post.data.originalDate ?? post.data.publishDate;
 const displayDate = formatDate(publishDate);
 const isoDate = publishDate.toISOString();
+// Real modification date (Notion "Last Updated", set on guide refreshes /
+// manual edits). Only treated as an update when it's after the publish date.
+const updatedDate =
+  post.data.lastUpdated && post.data.lastUpdated > publishDate
+    ? post.data.lastUpdated
+    : undefined;
+const modifiedDate = updatedDate ?? post.data.publishDate;
 
 // Breadcrumb category: use the post's primary tag (linked to its tag page)
 // instead of a blanket "Archive". Prefer a real section/place; fall back to the
@@ -61,7 +68,7 @@ const ld = [
     url,
     imageUrl: post.data.cover,
     publishDate,
-    modifiedDate: post.data.publishDate,
+    modifiedDate,
     tags: post.data.tags ?? [],
     wordCount,
     readingMinutes: mins,
@@ -79,7 +86,7 @@ const ld = [
   description={description}
   ogImage={post.data.cover}
   publishedTime={publishDate}
-  modifiedTime={post.data.publishDate}
+  modifiedTime={modifiedDate}
   ogType="article"
   articleTags={post.data.tags}
   articleAuthor={SITE.author.name}
@@ -102,9 +109,15 @@ const ld = [
         <h1>{post.data.title}</h1>
         {post.data.excerpt && <p class="lede">{post.data.excerpt}</p>}
         <p class="post-dateline">
-          <span class="byline">By {SITE.author.name}</span>
+          <span class="byline">By <a href="/about/">{SITE.author.name}</a></span>
           <span aria-hidden="true">·</span>
           <span>Published <time datetime={isoDate}>{displayDate}</time></span>
+          {updatedDate && (
+            <>
+              <span aria-hidden="true">·</span>
+              <span>Updated <time datetime={updatedDate.toISOString()}>{formatDate(updatedDate)}</time></span>
+            </>
+          )}
           <span aria-hidden="true">·</span>
           <span>{mins} min read</span>
         </p>

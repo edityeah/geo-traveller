@@ -147,6 +147,7 @@ export type PostProps = {
   excerpt?: string;
   originalUrl?: string;
   originalDate?: string;
+  lastUpdated?: string;
 };
 
 function plainText(rich: any[] | undefined): string {
@@ -185,6 +186,9 @@ export function extractProps(page: PageObjectResponse): PostProps {
   const excerpt = plainText(p.Excerpt?.rich_text) || undefined;
   const originalUrl = p['Original URL']?.url || undefined;
   const originalDate = p['Original Date']?.date?.start || undefined;
+  // Set by the agent on guide refreshes (and editable by hand in Notion).
+  // Feeds dateModified/og:modified + the sitemap <lastmod>.
+  const lastUpdated = p['Last Updated']?.date?.start || undefined;
 
   return {
     id: page.id,
@@ -199,5 +203,6 @@ export function extractProps(page: PageObjectResponse): PostProps {
     excerpt,
     originalUrl,
     originalDate,
+    lastUpdated,
   };
 }

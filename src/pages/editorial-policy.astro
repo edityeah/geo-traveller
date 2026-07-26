@@ -1,0 +1,99 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE } from '../lib/seo';
+
+// E-E-A-T / transparency page: how stories get made (including the AI-assisted
+// drafting), sourcing standards, and the corrections policy. Linked from the
+// footer. Static (repo, not Notion) so it ships with the site unconditionally.
+const description =
+  'How The Geo-Traveller is written and edited — sourcing standards, our use of AI-assisted drafting with human review, and how to request a correction.';
+---
+
+<Base title="Editorial policy" description={description}>
+  <div class="policy">
+    <h1 class="page-title">Editorial policy</h1>
+    <p class="page-subtitle">How stories on {SITE.name} get researched, written and corrected.</p>
+
+    <h2>Who's behind this site</h2>
+    <p>
+      {SITE.name} is written and edited by <a href="/about/">{SITE.author.name}</a> —
+      a travel writer and photographer documenting India and beyond. It is an
+      independent publication: nobody pays us to cover (or not cover) a
+      destination, airline or restaurant.
+    </p>
+
+    <h2>How stories are made</h2>
+    <p>
+      We use AI tools as part of our writing workflow, and we'd rather say so
+      plainly than bury it. Here is exactly how it works:
+    </p>
+    <ul>
+      <li>
+        <strong>Research &amp; drafting.</strong> Story ideas come from primary
+        sources — official announcements, news reports, search trends, and our
+        own travel. Drafts may be prepared with the help of AI writing tools,
+        always grounded in a real, cited source article.
+      </li>
+      <li>
+        <strong>Human review before publishing.</strong> Nothing is published
+        automatically. Every draft sits in an editorial queue where it is
+        reviewed, fact-checked against its sources, and edited by a human
+        before it goes live.
+      </li>
+      <li>
+        <strong>Sourcing.</strong> News stories link to the underlying source.
+        Guides note when information (visa rules, fares, opening hours) was
+        last verified — these things change, so always confirm with the
+        official source before you book or travel.
+      </li>
+      <li>
+        <strong>Images.</strong> Photography is our own or sourced from
+        licensed / freely-licensed providers (Unsplash, Pexels, Pixabay,
+        Wikimedia Commons) with appropriate attribution.
+      </li>
+    </ul>
+
+    <h2>Updates &amp; corrections</h2>
+    <p>
+      Guides are living documents: when the facts change, we update the guide
+      in place and stamp it with an “Updated” date. If we get something wrong,
+      we fix the article and note the correction rather than quietly rewriting
+      history.
+    </p>
+    <p>
+      Spotted an error? Tell us via the <a href="/contact/">contact page</a> or
+      email <a href={`mailto:${SITE.author.email}`}>{SITE.author.email}</a> —
+      corrections are typically reviewed within a few days.
+    </p>
+
+    <h2>Advertising &amp; affiliations</h2>
+    <p>
+      If a story ever contains sponsored content or affiliate links, it will be
+      clearly disclosed in that story. Editorial decisions — what we cover and
+      what we recommend — are never sold.
+    </p>
+  </div>
+</Base>
+
+<style>
+  .policy {
+    max-width: var(--measure);
+    margin: 0 auto;
+  }
+  .policy h2 {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    margin: 2.25rem 0 0.75rem;
+  }
+  .policy p,
+  .policy li {
+    color: var(--fg-soft);
+    line-height: 1.65;
+  }
+  .policy ul {
+    padding-left: 1.25rem;
+  }
+  .policy li {
+    margin: 0 0 0.75rem;
+  }
+</style>

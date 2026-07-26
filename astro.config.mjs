@@ -28,7 +28,10 @@ try {
     const block = fm[1];
 
     const slug = (block.match(/^slug:\s*"?([^"\n]+?)"?\s*$/m)?.[1] ?? file.replace(/\.mdx?$/, '')).trim();
+    // Prefer the real modification date (Notion "Last Updated") over publish
+    // date for <lastmod> — refreshed guides signal freshness to crawlers.
     const dateRaw = (
+      block.match(/^lastUpdated:\s*"?([^"\n]+?)"?\s*$/m)?.[1] ??
       block.match(/^publishDate:\s*"?([^"\n]+?)"?\s*$/m)?.[1] ??
       block.match(/^originalDate:\s*"?([^"\n]+?)"?\s*$/m)?.[1] ??
       ''

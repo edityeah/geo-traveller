@@ -106,6 +106,7 @@ async function buildPosts(warnings: string[]) {
       excerpt: props.excerpt,
       originalUrl: props.originalUrl,
       originalDate: props.originalDate,
+      lastUpdated: props.lastUpdated,
     });
 
     const file = join(POSTS_OUT, `${props.slug}.mdx`);
