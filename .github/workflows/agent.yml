@@ -1,12 +1,15 @@
 name: Trending-topic blog agent
 
 on:
-  # Hourly → up to 24 run-slots/day, one post each. The planner caps daily
-  # output at 10 (1 evergreen guide / 4 travel news / 5 food+experiences)
-  # from Notion state; extra slots no-op. Hourly gives enough headroom to hit
-  # the cap despite GitHub's scheduled-cron delays/skips.
+  # 4 run-slots/day, one post each. The planner caps daily output at 2
+  # (1 evergreen guide + 1 food/experiences; news only when trending) from
+  # Notion state; extra slots no-op. 4 slots for 2 posts gives headroom for
+  # GitHub's scheduled-cron delays/skips. Off-hour minute (:23) avoids the
+  # top-of-hour cron congestion where GitHub drops runs.
+  # Deliberately low velocity — see run.ts: high-volume LLM output was
+  # tripping Google's scaled-content classification and blocking indexing.
   schedule:
-    - cron: '0 * * * *'
+    - cron: '23 2,7,12,17 * * *'
   workflow_dispatch:
     inputs:
       regen_page_id:

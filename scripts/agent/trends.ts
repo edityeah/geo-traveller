@@ -136,10 +136,15 @@ export function trendMix(trending: Candidate[], fallback: Quota, floor = 2): Quo
   const remaining = total - evergreen;
   const expCount = trending.filter((c) => c.kind === 'food' || c.kind === 'experience').length;
   const newsCount = trending.length - expCount;
-  if (newsCount + expCount === 0) return fallback;
-  const maxSlot = remaining - floor;
+  if (newsCount + expCount === 0 || remaining <= 0) return fallback;
+  // At small daily totals the per-stream floor can't fit (floor*2 > remaining):
+  // shrink it so the few flexible slots follow the trend signal instead of
+  // producing negative quotas. E.g. remaining=1 → floor 0, the one slot goes
+  // to whichever stream is trending harder.
+  const f = Math.min(floor, Math.floor(remaining / 2));
+  const maxSlot = remaining - f;
   let news = Math.round((remaining * newsCount) / (newsCount + expCount));
-  news = Math.max(floor, Math.min(maxSlot, news));
+  news = Math.max(f, Math.min(maxSlot, news));
   const events = remaining - news;
   return { evergreen, news, events };
 }

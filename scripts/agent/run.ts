@@ -7,8 +7,8 @@
  *              else create a news draft.
  *   All drafts pass QA → QA / QA Notes columns. Nothing auto-publishes.
  *
- * Env: AGENT_EVERGREEN_PER_DAY (1), AGENT_NEWS_PER_DAY (4),
- *      AGENT_EVENTS_PER_DAY (5 — food/experiences/events), AGENT_DRY_RUN.
+ * Env: AGENT_EVERGREEN_PER_DAY (1), AGENT_NEWS_PER_DAY (0),
+ *      AGENT_EVENTS_PER_DAY (1 — food/experiences/events), AGENT_DRY_RUN.
  */
 import { Client, isFullPage } from '@notionhq/client';
 import { discover, discoverExperiences, type Candidate } from './discover.js';
@@ -24,11 +24,14 @@ import { withRetry } from '../lib/notion.js';
 import { matchGuide, refreshGuide, type GuideRef } from './refresh.js';
 import { runQa, deterministicChecks } from './qa.js';
 
-// Daily mix: 1 evergreen guide / 4 travel news / 5 food+experiences (10/day),
-// weighted toward the food/experiences/events stream (Curly Tales + event feeds).
+// Daily mix: 2/day, evergreen-first — 1 evergreen guide + 1 food/experiences
+// (news only when trends tilt the flexible slot, or via AGENT_FORCE_CATEGORY).
+// Deliberately low velocity: high-volume LLM news rewrites were tripping
+// Google's scaled-content classification and starving the site of indexing.
+// Evergreen long-tail guides are the stream a low-authority domain can rank.
 const EVERGREEN_PER_DAY = Number(process.env.AGENT_EVERGREEN_PER_DAY ?? 1);
-const NEWS_PER_DAY = Number(process.env.AGENT_NEWS_PER_DAY ?? 4);
-const EVENTS_PER_DAY = Number(process.env.AGENT_EVENTS_PER_DAY ?? 5);
+const NEWS_PER_DAY = Number(process.env.AGENT_NEWS_PER_DAY ?? 0);
+const EVENTS_PER_DAY = Number(process.env.AGENT_EVENTS_PER_DAY ?? 1);
 const DRY = !!process.env.AGENT_DRY_RUN;
 // Drafts scoring below this get one automatic SEO rewrite before saving.
 const SEO_MIN = Number(process.env.AGENT_SEO_MIN ?? 70);
@@ -153,10 +156,11 @@ async function main() {
   }
 
   // Prefer the under-quota category, but if it can't produce (e.g. evergreen
-  // backlog exhausted, or no fresh news/events), fall back to the others so the
-  // slot isn't wasted — keeps daily output near TOTAL_PER_DAY when a stream is dry.
-  const preferred = FORCE ?? chooseCategory(counts, quota) ?? 'news';
-  const order = FORCE ? [FORCE] : [preferred, ...ALL.filter((c) => c !== preferred)];
+  // backlog exhausted, or no fresh news/events), fall back to OTHER UNDER-QUOTA
+  // categories so the slot isn't wasted. Zero-quota streams (news by default)
+  // are never used as fallback — better to skip a slot than pad with rewrites.
+  const preferred = FORCE ?? chooseCategory(counts, quota) ?? 'events';
+  const order = FORCE ? [FORCE] : [preferred, ...ALL.filter((c) => c !== preferred && counts[c] < quota[c])];
   console.log(`[agent]${FORCE ? ' FORCED' : ' preferred'}: ${preferred} (order: ${order.join(' → ')})`);
 
   // Split trending into the streams that consume them.

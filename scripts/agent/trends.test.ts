@@ -50,3 +50,23 @@ test('trendMix falls back when no trends, tilts with floors otherwise', () => {
   assert.ok(mix.news >= 2, 'news respects floor');
   assert.ok(mix.events >= mix.news, 'events tilted higher');
 });
+
+test('trendMix at small totals: floor shrinks, no negative quotas', () => {
+  // 2/day default (1 evergreen + 1 flexible): the one flexible slot follows
+  // the dominant trend stream instead of blowing past the floor guardrail.
+  const fallback = { evergreen: 1, news: 0, events: 1 };
+  assert.deepEqual(trendMix([], fallback), fallback);
+
+  const foodTrends = [{ kind: 'food' }, { kind: 'food' }, { kind: 'experience' }] as any;
+  const foodMix = trendMix(foodTrends, fallback);
+  assert.deepEqual(foodMix, { evergreen: 1, news: 0, events: 1 });
+
+  const newsTrends = [{}, {}, {}, { kind: 'food' }] as any;
+  const newsMix = trendMix(newsTrends, fallback);
+  assert.deepEqual(newsMix, { evergreen: 1, news: 1, events: 0 });
+
+  for (const m of [foodMix, newsMix]) {
+    assert.ok(m.news >= 0 && m.events >= 0, 'no negative quotas');
+    assert.equal(m.evergreen + m.news + m.events, 2, 'total preserved');
+  }
+});

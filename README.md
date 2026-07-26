@@ -93,7 +93,7 @@ docs/superpowers/specs/ # design specs
 
 ## The auto-blog agent (`scripts/agent/`)
 
-Runs hourly in CI (`agent.yml`). Each run produces **one** draft. The daily cap
+Runs 4×/day in CI (`agent.yml`). Each run produces **one** draft. The daily cap
 and mix are computed from Notion state + a trends signal.
 
 **Pipeline** (`run.ts` orchestrates):
@@ -103,9 +103,11 @@ and mix are computed from Notion state + a trends signal.
    RSS (India + US), filtered to travel/food/experience relevance and grounded
    in each trend's real source article.
 2. **Plan** — `planner.ts` + `trends.ts::trendMix` decide the day's category
-   split. Base is **10 posts/day** (`1` evergreen guide / `4` travel news /
-   `5` food+experiences), **tilted toward whatever is trending** with guardrails
-   (always ≥1 evergreen, no category zeroed).
+   split. Base is **2 posts/day** (`1` evergreen guide + `1` food/experiences;
+   news only when trends tilt the flexible slot). Deliberately low velocity:
+   high-volume LLM news rewrites tripped Google's scaled-content
+   classification and blocked indexing — evergreen long-tail is where a
+   low-authority domain can rank.
 3. **Write** — `generate.ts` produces the post (title, slug, body, tags,
    excerpt, cover query, focus keyword) via the LLM. Three templates: news,
    evergreen guide, event.
@@ -173,7 +175,7 @@ All email is sent from `no-reply@geo-traveller.com` via **Resend**.
 | Workflow | Trigger | Purpose |
 |---|---|---|
 | `deploy.yml` | every 30 min + push | build from Notion + deploy to Cloudflare Pages |
-| `agent.yml` | hourly + manual | run the blog agent (one draft/run) |
+| `agent.yml` | 4×/day + manual | run the blog agent (one draft/run) |
 | `digest.yml` | Sat 05:30 UTC + manual | send the weekly subscriber digest |
 | `set-pages-secrets.yml` | manual | push runtime secrets to the Pages project |
 | `backfill-comments-kv.yml`, `kv-comment-remove.yml`, `dns-audit.yml`, `r2-migrate.yml` | manual | one-off maintenance |
