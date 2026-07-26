@@ -124,28 +124,39 @@ export interface GeneratedPost {
   sourceName: string;
 }
 
+/**
+ * Most-relevant existing posts by keyword overlap with `topicText`. Every
+ * generator uses this so its internal-backlink candidate list is on-topic —
+ * the alternative (first 20 in Notion query order) gives the model near-random
+ * posts to link, which breaks topic clustering once the archive is large.
+ */
+export function rankRelated(topicText: string, posts: ExistingPost[], n = 20): ExistingPost[] {
+  const words = topicText.toLowerCase().split(/\W+/).filter((w) => w.length >= 4);
+  return posts
+    .map((p) => {
+      const text = (p.title + ' ' + (p.tags ?? []).join(' ') + ' ' + (p.excerpt ?? '')).toLowerCase();
+      let score = 0;
+      for (const word of words) if (text.includes(word)) score++;
+      return { p, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, n)
+    .map((x) => x.p);
+}
+
+/** Prompt-ready bullet list of backlink candidates (title, slug, tags). */
+function postListLines(posts: ExistingPost[]): string {
+  return posts.length
+    ? posts.map((p) => `- ${p.title} — slug: ${p.slug}${p.tags?.length ? ' — tags: ' + p.tags.slice(0, 4).join(', ') : ''}`).join('\n')
+    : '(none yet)';
+}
+
 export async function generatePost(
   candidate: Candidate,
   existingPosts: ExistingPost[] = []
 ): Promise<GeneratedPost> {
   // Trim to most-relevant 20 by simple keyword overlap, so the prompt doesn't blow up.
-  const topic = (candidate.title + ' ' + candidate.summary).toLowerCase();
-  const ranked = existingPosts
-    .map((p) => {
-      const text = (p.title + ' ' + (p.tags ?? []).join(' ') + ' ' + (p.excerpt ?? '')).toLowerCase();
-      let score = 0;
-      for (const word of topic.split(/\W+/).filter((w) => w.length >= 4)) {
-        if (text.includes(word)) score++;
-      }
-      return { p, score };
-    })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 20)
-    .map((x) => x.p);
-
-  const postList = ranked.length > 0
-    ? ranked.map((p) => `- ${p.title} — slug: ${p.slug}${p.tags?.length ? ' — tags: ' + p.tags.slice(0, 4).join(', ') : ''}`).join('\n')
-    : '(none yet)';
+  const postList = postListLines(rankRelated(candidate.title + ' ' + candidate.summary, existingPosts));
 
   const userPrompt = `Trending news to cover:
 
@@ -179,9 +190,9 @@ export async function generateEvergreen(
   topic: SeedTopic,
   existingPosts: ExistingPost[] = []
 ): Promise<GeneratedPost> {
-  const postList = existingPosts.length
-    ? existingPosts.slice(0, 20).map((p) => `- ${p.title} — slug: ${p.slug}`).join('\n')
-    : '(none yet)';
+  const postList = postListLines(
+    rankRelated(`${topic.title} ${topic.brief} ${topic.tags.join(' ')}`, existingPosts)
+  );
 
   const userPrompt = `Write the definitive Geo-Traveller guide on this topic.
 
@@ -232,9 +243,7 @@ export async function generateEvent(
   candidate: Candidate,
   existingPosts: ExistingPost[] = []
 ): Promise<GeneratedPost> {
-  const postList = existingPosts.length
-    ? existingPosts.slice(0, 20).map((p) => `- ${p.title} — slug: ${p.slug}`).join('\n')
-    : '(none yet)';
+  const postList = postListLines(rankRelated(candidate.title + ' ' + candidate.summary, existingPosts));
 
   const userPrompt = `Event to cover (grounded in this source — do not invent details beyond it):
 
@@ -278,9 +287,9 @@ export async function rewriteForSeo(
   focusKeyword: string,
   existingPosts: ExistingPost[] = []
 ): Promise<GeneratedPost> {
-  const postList = existingPosts.length
-    ? existingPosts.slice(0, 20).map((p) => `- ${p.title} — slug: ${p.slug}`).join('\n')
-    : '(none yet)';
+  const postList = postListLines(
+    rankRelated(`${post.title} ${focusKeyword} ${(post.tags ?? []).join(' ')}`, existingPosts)
+  );
 
   const userPrompt = `Focus keyword: ${focusKeyword}
 
