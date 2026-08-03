@@ -45,25 +45,35 @@ export function deterministicChecks(p: QaInput): string[] {
  * if the LLM call fails, fall back to the deterministic result.
  */
 export async function runQa(p: QaInput): Promise<QaResult> {
-  const det = deterministicChecks(p);
+  const issues = [...deterministicChecks(p)];
 
-  let llmNotes = '';
+  // Completeness is decided DETERMINISTICALLY here (the LLM is unreliable at it
+  // and produces false "ends mid-sentence" alarms on complete posts).
+  const complete = bodyIsComplete(p.body);
+  if (!complete.ok) issues.push(`Body incomplete: ${complete.reason}`);
+
+  // The LLM reviewer judges FACTS ONLY — not length or completeness.
   try {
     const line = await judgeLine({
       system:
-        'You are a publishing QA reviewer. Given a draft title and body, reply with a single line: ' +
-        'either "OK" if it is internally consistent, on-topic, and free of obvious factual contradictions, ' +
-        'or "FLAG: <short reason>" if not. Be terse.',
+        'You are a publishing QA reviewer checking FACTUAL accuracy only. Given a draft title and body, reply with a single line: ' +
+        '"OK" if it is factually self-consistent and on-topic, or "FLAG: <short reason>" if it contains a factual error, an internal contradiction, or is off-topic. ' +
+        'Do NOT comment on length, structure, formatting, or whether it "feels complete / cut off" — completeness is verified separately. Be terse.',
       user: `TITLE: ${p.title}\n\nBODY:\n${p.body.slice(0, 6000)}`,
       maxTokens: 400,
     });
-    if (/^FLAG/i.test(line)) llmNotes = line.replace(/^FLAG:?\s*/i, '');
+    if (/^FLAG/i.test(line)) {
+      let note = line.replace(/^FLAG:?\s*/i, '').trim();
+      // Guard: if the body is deterministically complete, ignore any stray
+      // completeness complaint the model still emitted.
+      if (complete.ok && /(cut off|incomplete|mid-sentence|ends? abruptly|truncat|unfinished)/i.test(note)) note = '';
+      if (note) issues.push(note);
+    }
   } catch (e: any) {
-    llmNotes = `QA LLM check skipped: ${e?.message ?? e}`;
+    issues.push(`QA LLM check skipped: ${e?.message ?? e}`);
   }
 
-  const allIssues = [...det, ...(llmNotes ? [llmNotes] : [])];
-  return allIssues.length
-    ? { status: 'Flagged', notes: allIssues.join(' | ').slice(0, 1900) }
+  return issues.length
+    ? { status: 'Flagged', notes: issues.join(' | ').slice(0, 1900) }
     : { status: 'Passed', notes: 'No issues found by automated QA.' };
 }
