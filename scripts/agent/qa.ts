@@ -3,6 +3,31 @@ import { judgeLine } from './llm.js';
 export interface QaInput { title: string; body: string; sourceSummary?: string; }
 export interface QaResult { status: 'Passed' | 'Flagged'; notes: string; }
 
+/**
+ * Deterministic completeness check — is the body a finished article, or does it
+ * end mid-sentence / mid-thought? This is the hard gate the orchestrator uses to
+ * refuse to save a truncated draft (no LLM, so it can never be fooled).
+ *
+ * A complete body: has enough words, doesn't end on a dangling connector or
+ * punctuation that implies more is coming, and ends on real terminal
+ * punctuation (or closing markdown).
+ */
+export function bodyIsComplete(body: string, minWords = 120): { ok: boolean; reason?: string } {
+  const t = (body ?? '').replace(/\s+$/, '');
+  if (!t) return { ok: false, reason: 'empty body' };
+  const words = t.split(/\s+/).filter(Boolean);
+  if (words.length < minWords) return { ok: false, reason: `too short (${words.length} words)` };
+  // Ends on a comma/colon/semicolon/dash/ellipsis-less connector → cut off.
+  if (/[,:;\-–—]$/.test(t)) return { ok: false, reason: 'ends on a dangling connector' };
+  // Ends on a common continuation word ("... and", "to", "the", "of" …) → cut off.
+  const lastWord = words[words.length - 1].toLowerCase().replace(/[^a-z]/g, '');
+  const DANGLERS = new Set(['and', 'or', 'but', 'the', 'a', 'an', 'to', 'of', 'for', 'with', 'in', 'on', 'at', 'by', 'as', 'is', 'are', 'was', 'were', 'that', 'which', 'this', 'these', 'your', 'you', 'we', 'it']);
+  if (DANGLERS.has(lastWord)) return { ok: false, reason: `ends mid-sentence ("…${words.slice(-4).join(' ')}")` };
+  // Must end on terminal punctuation or a clean closing character.
+  if (!/[.!?…"'’”)\]*`]$/.test(t)) return { ok: false, reason: `no terminal punctuation ("…${words.slice(-4).join(' ')}")` };
+  return { ok: true };
+}
+
 /** Local, no-LLM checks for the obvious failure modes. Returns issue strings. */
 export function deterministicChecks(p: QaInput): string[] {
   const issues: string[] = [];

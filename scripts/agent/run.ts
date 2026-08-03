@@ -22,7 +22,7 @@ import { topicSignals, rankTopicsBySignal } from './keywords.js';
 import { chooseCategory, pickEvergreenTopic, type DayCounts } from './planner.js';
 import { withRetry } from '../lib/notion.js';
 import { matchGuide, refreshGuide, type GuideRef } from './refresh.js';
-import { runQa, deterministicChecks } from './qa.js';
+import { runQa, deterministicChecks, bodyIsComplete } from './qa.js';
 
 // Daily mix: 2/day, evergreen-first — 1 evergreen guide + 1 food/experiences
 // (news only when trends tilt the flexible slot, or via AGENT_FORCE_CATEGORY).
@@ -40,29 +40,52 @@ const notion = new Client({ auth: process.env.NOTION_TOKEN!, fetch: globalThis.f
 const DB = process.env.NOTION_DATABASE_ID!;
 
 /**
- * Score a freshly-generated draft for on-page SEO; if it's below SEO_MIN, ask
- * the creator agent to rewrite it once (kept only if the score improves). Then
- * resolve inline images on the final version. Returns the post to publish, its
- * image-resolved body, and a short note for the QA column.
+ * Generate → guarantee a COMPLETE body → SEO score/rewrite → resolve images.
+ *
+ * `genFn` is called to produce the draft; if the body is cut off mid-sentence
+ * it is regenerated (up to 3 attempts). If no complete body can be produced,
+ * this returns `null` and the caller SKIPS the post — a truncated draft can
+ * never reach Notion. Any SEO rewrite is only accepted if it's also complete.
  */
 async function seoRefine(
-  raw: GeneratedPost,
+  genFn: () => Promise<GeneratedPost>,
   existing: ExistingPost[],
   minWords: number
-): Promise<{ post: GeneratedPost; body: string; seoNote: string }> {
-  let cur = raw;
+): Promise<{ post: GeneratedPost; body: string; seoNote: string } | null> {
+  // Regenerate until the body is a finished article (deterministic check).
+  let cur: GeneratedPost | null = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const candidate = await genFn();
+    const c = bodyIsComplete(candidate.body);
+    if (c.ok) { cur = candidate; break; }
+    console.warn(`[agent] incomplete body (attempt ${attempt}/3): ${c.reason} — regenerating`);
+  }
+  if (!cur) {
+    console.error('[agent] could not produce a complete body after 3 attempts — SKIPPING this post.');
+    return null;
+  }
+
   let s = seoScore({ title: cur.title, body: cur.body, excerpt: cur.excerpt, focusKeyword: cur.focusKeyword, tags: cur.tags, minWords });
   console.log(`[agent] SEO ${s.score}/100 (kw: ${s.focusKeyword})${s.issues.length ? ' — ' + s.issues.join('; ') : ''}`);
   if (s.score < SEO_MIN) {
     try {
       const rw = await rewriteForSeo(cur, s.issues, s.focusKeyword, existing);
+      const rc = bodyIsComplete(rw.body);
       const rs = seoScore({ title: rw.title, body: rw.body, excerpt: rw.excerpt, focusKeyword: rw.focusKeyword ?? s.focusKeyword, tags: rw.tags, minWords });
-      if (rs.score > s.score) { cur = rw; s = rs; console.log(`[agent] SEO rewrite → ${rs.score}/100`); }
-      else console.log(`[agent] SEO rewrite not better (${rs.score}/100) — keeping original`);
+      if (rc.ok && rs.score > s.score) { cur = rw; s = rs; console.log(`[agent] SEO rewrite → ${rs.score}/100`); }
+      else console.log(`[agent] SEO rewrite ${rc.ok ? `not better (${rs.score}/100)` : `was incomplete (${rc.reason})`} — keeping original`);
     } catch (e: any) {
       console.warn(`[agent] SEO rewrite failed: ${e?.message ?? e}`);
     }
   }
+
+  // Final hard gate — belt-and-suspenders before we commit to Notion.
+  const final = bodyIsComplete(cur.body);
+  if (!final.ok) {
+    console.error(`[agent] final completeness gate failed (${final.reason}) — SKIPPING this post.`);
+    return null;
+  }
+
   const requested = (cur.body.match(/\]\(query:/g) ?? []).length;
   const body = await resolveInlineImages(cur.body);
   const kept = (body.match(/!\[[^\]]*\]\(https?:\/\//g) ?? []).length;
@@ -187,7 +210,9 @@ async function doEvergreen(posts: Awaited<ReturnType<typeof loadPosts>>, existin
   if (!topic) { console.log('[agent] no uncovered evergreen topics left.'); return false; }
   console.log(`[agent] evergreen topic: ${topic.key} — ${topic.title}`);
 
-  const { post, body, seoNote } = await seoRefine(await generateEvergreen(topic, existing), existing, 800);
+  const refined = await seoRefine(() => generateEvergreen(topic, existing), existing, 800);
+  if (!refined) return false;
+  const { post, body, seoNote } = refined;
   const slug = (post.slug || slugify(post.title)).replace(/[^a-z0-9-]/g, '');
   // Drive evergreen covers from the curated scenic subjects (landmark/skyline/
   // flag) rather than the model's coverQuery, which skews to document close-ups.
@@ -230,7 +255,9 @@ async function doNews(posts: Awaited<ReturnType<typeof loadPosts>>, existing: Ex
   const candidate = candidates[0];
   console.log(`[agent] news: ${candidate.title}`);
 
-  const { post, body, seoNote } = await seoRefine(await generatePost(candidate, existing), existing, 500);
+  const refined = await seoRefine(() => generatePost(candidate, existing), existing, 500);
+  if (!refined) return false;
+  const { post, body, seoNote } = refined;
   const slug = (post.slug || slugify(post.title)).replace(/[^a-z0-9-]/g, '');
   const cover = await resolveCover({
     type: 'news', title: post.title, unsplashQuery: post.coverQuery, candidateImageUrl: candidate.imageUrl,
@@ -298,10 +325,12 @@ async function doExperiences(posts: Awaited<ReturnType<typeof loadPosts>>, exist
 
   // Events get the booking/how-to-watch template; food + experiences are
   // written as flexible features (the general news writer adapts well).
-  const raw = kind === 'event'
-    ? await generateEvent(candidate, existing)
-    : await generatePost(candidate, existing);
-  const { post, body, seoNote } = await seoRefine(raw, existing, 500);
+  const gen = () => kind === 'event'
+    ? generateEvent(candidate, existing)
+    : generatePost(candidate, existing);
+  const refined = await seoRefine(gen, existing, 500);
+  if (!refined) return false;
+  const { post, body, seoNote } = refined;
   const slug = (post.slug || slugify(post.title)).replace(/[^a-z0-9-]/g, '');
   const cover = await resolveCover({
     type: 'news', title: post.title, unsplashQuery: post.coverQuery, candidateImageUrl: candidate.imageUrl,
